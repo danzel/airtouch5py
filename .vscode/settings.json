@@ -1,7 +1,15 @@
 {
+    "[python]": {
+        "editor.defaultFormatter": "omnilib.ufmt",
+        "editor.formatOnSave": true
+    },
     "python.testing.pytestArgs": [
         "tests"
     ],
+    "python.analysis.typeCheckingMode": "strict",
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "ufmt.path": [
+        ".venv/Scripts/ufmt"
+    ]
 }
