@@ -15,6 +15,10 @@ from airtouch5py.packets.ac_control import (
     SetpointControl,
     SetPowerSetting,
 )
+from airtouch5py.packets.ac_error_information import (
+    AcErrorInformationData,
+    AcErrorInformationRequestData,
+)
 from airtouch5py.packets.ac_status import (
     AcFanSpeed,
     AcMode,
@@ -479,7 +483,16 @@ class PacketDecoder:
         return AcAbilityData(ac_ability)
 
     def decode_ac_error_information(self, bytes: bytes) -> Data:
-        raise NotImplementedError()
+        # Byte 3 AC number
+        ac_number = struct.unpack(">B", bytes[0:1])[0]
+        if len(bytes) == 1:
+            return AcErrorInformationRequestData(ac_number)
+
+        # Byte 4 error info length
+        error_length = struct.unpack(">B", bytes[1:2])[0]
+        # Byte 5-error_length error info
+        error_info = bytes[2 : 2 + error_length].decode("ascii")
+        return AcErrorInformationData(ac_number, error_info)
 
     def decode_zone_name(self, bytes: bytes) -> Data:
         raise NotImplementedError()

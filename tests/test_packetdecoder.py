@@ -7,6 +7,10 @@ from airtouch5py.packets.ac_control import (
     SetpointControl,
     SetPowerSetting,
 )
+from airtouch5py.packets.ac_error_information import (
+    AcErrorInformationData,
+    AcErrorInformationRequestData,
+)
 from airtouch5py.packets.ac_status import AcFanSpeed, AcMode, AcPowerState, AcStatusData
 from airtouch5py.packets.datapacket import DataPacket
 from airtouch5py.packets.zone_control import (
@@ -319,3 +323,42 @@ def test_extended_ac_ability_response():
     assert ac.max_cool_set_point == 31.0
     assert ac.min_heat_set_point == 18.0
     assert ac.max_heat_set_point == 31.0
+
+
+def test_ac_error_information_request():
+    """
+    Decode the AC error information (request) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x10\x00"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0x90B0
+    assert packet.message_id == 0x01
+    assert type(packet.data) is AcErrorInformationRequestData
+
+    # AC error information request (AC 0)
+    assert packet.data.ac_number == 0x00
+
+
+def test_ac_error_information_response():
+    """
+    Decode the AC error information (response) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x1A\xFF\x10\x00\x08\x45\x52\x3A\x20\x46\x46\x46\x45"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0xB090
+    assert packet.message_id == 0x01
+    assert type(packet.data) is AcErrorInformationData
+
+    # AC error information response (AC 0)
+    assert packet.data.ac_number == 0x00
+    assert packet.data.error_info == "ER: FFFE"
