@@ -1,8 +1,12 @@
 from enum import Enum
+
 from airtouch5py.packets.datapacket import Data
 
 
 class AcPowerState(Enum):
+    NOT_AVAILABLE = (
+        0b1111  # This should be used for any value that is not explicitly defined
+    )
     OFF = 0b0000
     ON = 0b0001
     AWAY_OFF = 0b0010
@@ -12,6 +16,9 @@ class AcPowerState(Enum):
 
 
 class AcMode(Enum):
+    NOT_AVAILABLE = (
+        0b1111  # This should be used for any value that is not explicitly defined
+    )
     AUTO = 0b0000
     HEAT = 0b0001
     DRY = 0b0010
@@ -23,6 +30,9 @@ class AcMode(Enum):
 
 
 class AcFanSpeed(Enum):
+    NOT_AVAILABLE = (
+        0b1111  # This should be used for any value that is not explicitly defined
+    )
     AUTO = 0b0000
     QUIET = 0b0001
     LOW = 0b0010
@@ -44,14 +54,43 @@ class AcStatus:
     ac_number: int
     ac_mode: AcMode
     ac_fan_speed: AcFanSpeed
-    ac_setpoint: float
+    ac_setpoint: float | None  # Other: Not available
     turbo_active: bool
     bypass_active: bool
     spill_active: bool
     timer_set: bool
-    temperature: float
+    temperature: float | None  # Other: Not available
     error_code: int
+
+    def __init__(
+        self,
+        ac_power_state: AcPowerState,
+        ac_number: int,
+        ac_mode: AcMode,
+        ac_fan_speed: AcFanSpeed,
+        ac_setpoint: float | None,
+        turbo_active: bool,
+        bypass_active: bool,
+        spill_active: bool,
+        timer_set: bool,
+        temperature: float | None,
+        error_code: int,
+    ):
+        self.ac_power_state = ac_power_state
+        self.ac_number = ac_number
+        self.ac_mode = ac_mode
+        self.ac_fan_speed = ac_fan_speed
+        self.ac_setpoint = ac_setpoint
+        self.turbo_active = turbo_active
+        self.bypass_active = bypass_active
+        self.spill_active = spill_active
+        self.timer_set = timer_set
+        self.temperature = temperature
+        self.error_code = error_code
 
 
 class AcStatusData(Data):
     ac_status: list[AcStatus]
+
+    def __init__(self, ac_status: list[AcStatus]):
+        self.ac_status = ac_status

@@ -1,4 +1,5 @@
 from airtouch5py.packetdecoder import PacketDecoder
+from airtouch5py.packets.ac_ability import AcAbilityData, AcAbilityRequestData
 from airtouch5py.packets.ac_control import (
     AcControlData,
     SetAcFanSpeed,
@@ -6,6 +7,7 @@ from airtouch5py.packets.ac_control import (
     SetpointControl,
     SetPowerSetting,
 )
+from airtouch5py.packets.ac_status import AcFanSpeed, AcMode, AcPowerState, AcStatusData
 from airtouch5py.packets.datapacket import DataPacket
 from airtouch5py.packets.zone_control import (
     ZoneControlData,
@@ -183,3 +185,137 @@ def test_ac_control_first_ac_cool_second_ac_26_degrees():
     assert c.ac_fan_speed == SetAcFanSpeed.KEEP_AC_FAN_SPEED
     assert c.setpoint_control == SetpointControl.CHANGE_SETPOINT
     assert c.setpoint == 26.0
+
+
+def test_ac_status_request():
+    """
+    Decode the AC status (request) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\x80\xB0\x01\xC0\x00\x08\x23\x00\x00\x00\x00\x00\x00\x00"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0x80B0
+    assert packet.message_id == 0x01
+    assert type(packet.data) is AcStatusData
+
+    # AC status
+    assert len(packet.data.ac_status) == 0
+
+
+def test_ac_status_response_2_acs():
+    """
+    Decode the AC status (response) message as given in the protocol documentation.
+
+    AirTouch 5 response with data for 2 ACs
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\xB0\x80\x01\xC0\x00\x1C\x23\x00\x00\x00\x00\x0A\x00\x02\x10\x12\x78\xC0\x02\xDA\x00\x00\x80\x00\x01\x42\x64\xC0\x02\xE4\x00\x00\x80\x00"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0xB080
+    assert packet.message_id == 0x01
+    assert type(packet.data) is AcStatusData
+
+    # AC status
+    assert len(packet.data.ac_status) == 2
+
+    # AC 0
+    ac = packet.data.ac_status[0]
+    assert ac.ac_power_state == AcPowerState.ON
+    assert ac.ac_number == 0
+    assert ac.ac_mode == AcMode.HEAT
+    assert ac.ac_fan_speed == AcFanSpeed.LOW
+    assert ac.ac_setpoint == 22.0
+    assert ac.turbo_active == False
+    assert ac.bypass_active == False
+    assert ac.spill_active == False
+    assert ac.timer_set == False
+    assert ac.temperature == 23.0
+    assert ac.error_code == 0  # No error
+
+    # AC 1
+    ac = packet.data.ac_status[1]
+    assert ac.ac_power_state == AcPowerState.OFF
+    assert ac.ac_number == 1
+    assert ac.ac_mode == AcMode.COOL
+    assert ac.ac_fan_speed == AcFanSpeed.LOW
+    assert ac.ac_setpoint == 20.0
+    assert ac.turbo_active == False
+    assert ac.bypass_active == False
+    assert ac.spill_active == False
+    assert ac.timer_set == False
+    assert ac.temperature == 24.0
+    assert ac.error_code == 0  # No error
+
+
+def test_extended_ac_ability_request():
+    """
+    Decode the extended AC ability (request) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x11\x00"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0x90B0
+    assert packet.message_id == 0x01
+    assert type(packet.data) is AcAbilityRequestData
+
+    # AC ability request (AC 0)
+    assert packet.data.ac_number == 0x00
+
+
+def test_extended_ac_ability_response():
+    """
+    Decode the extended AC ability (response) message as given in the protocol documentation.
+
+    Had to increase length to 1C from 1A
+    Sample says the AC supports fan, but it doesn't
+    Sample says the AC doesn't support dry, but it does
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x1C\xFF\x11\x00\x18\x55\x4E\x49\x54\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x17\x1D\x10\x1f\x12\x1f"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0xB090
+    assert packet.message_id == 0x01
+    assert type(packet.data) is AcAbilityData
+    assert len(packet.data.ac_ability) == 1
+
+    # AC ability response (AC 0)
+    ac = packet.data.ac_ability[0]
+    assert ac.ac_number == 0x00
+    assert ac.ac_name == "UNIT"
+    assert ac.start_zone_number == 0x00
+    assert ac.zone_count == 0x04
+    assert ac.supports_mode_cool == True
+    assert ac.supports_mode_fan == False
+    assert ac.supports_mode_dry == True
+    assert ac.supports_mode_heat == True
+    assert ac.supports_mode_auto == True
+
+    assert ac.supports_fan_speed_intelligent_auto == False
+    assert ac.supports_fan_speed_turbo == False
+    assert ac.supports_fan_speed_powerful == False
+    assert ac.supports_fan_speed_high == True
+    assert ac.supports_fan_speed_medium == True
+    assert ac.supports_fan_speed_low == True
+    assert ac.supports_fan_speed_quiet == False
+    assert ac.supports_fan_speed_auto == True
+
+    assert ac.min_cool_set_point == 16.0
+    assert ac.max_cool_set_point == 31.0
+    assert ac.min_heat_set_point == 18.0
+    assert ac.max_heat_set_point == 31.0

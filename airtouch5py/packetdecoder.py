@@ -1,6 +1,12 @@
 import struct
 from enum import Enum
 
+from airtouch5py.packets.ac_ability import (
+    AcAbility,
+    AcAbilityData,
+    AcAbilityRequestData,
+)
+
 from airtouch5py.packets.ac_control import (
     AcControl,
     AcControlData,
@@ -8,6 +14,13 @@ from airtouch5py.packets.ac_control import (
     SetAcMode,
     SetpointControl,
     SetPowerSetting,
+)
+from airtouch5py.packets.ac_status import (
+    AcFanSpeed,
+    AcMode,
+    AcPowerState,
+    AcStatus,
+    AcStatusData,
 )
 
 from airtouch5py.packets.datapacket import Data, DataPacket
@@ -61,6 +74,9 @@ class PacketDecoder:
     _set_SetAcMode = set(item.value for item in SetAcMode)
     _set_SetAcFanSpeed = set(item.value for item in SetAcFanSpeed)
     _set_SetpointControl = set(item.value for item in SetpointControl)
+    _set_AcPowerState = set(item.value for item in AcPowerState)
+    _set_AcMode = set(item.value for item in AcMode)
+    _set_AcFanSpeed = set(item.value for item in AcFanSpeed)
 
     def decode(self, buffer: bytes) -> DataPacket:
         # Header (4 bytes)
@@ -141,7 +157,7 @@ class PacketDecoder:
             case ControlStatusSubType.AC_STATUS.value:
                 if normal_data_length != 0:
                     raise ValueError("AC status message should not have normal data")
-                if repeat_data_length != 10:
+                if repeat_data_count != 0 and repeat_data_length != 10:
                     raise ValueError(
                         "AC status message should have 10 byte repeat data"
                     )
@@ -286,8 +302,73 @@ class PacketDecoder:
 
         return AcControlData(ac_control)
 
-    def decode_ac_status(self, bytes: bytes, repeat_data_count: int) -> Data:
-        raise NotImplementedError()
+    def decode_ac_status(self, bytes: bytes, repeat_data_count: int) -> AcStatusData:
+        if repeat_data_count == 0:
+            return AcStatusData([])
+
+        ac_status: list[AcStatus] = []
+        bits = bitarray(endian="big")
+
+        for i in range(0, repeat_data_count):
+            bits.clear()
+            bits.frombytes(bytes[i * 10 : i * 10 + 10])
+
+            # Byte 1 Bit 8-5 AC power state
+            ac_power_state = ba2int(bits[0:4])
+            if ac_power_state in self._set_AcPowerState:
+                ac_power_state = AcPowerState(ac_power_state)
+            else:
+                ac_power_state = AcPowerState.NOT_AVAILABLE
+            # Byte 1 Bit 4-1 AC number
+            ac_number = ba2int(bits[4:8])
+            # Byte 2 Bit 8-5 AC mode
+            ac_mode = ba2int(bits[8 + 0 : 8 + 4])
+            if ac_mode in self._set_AcMode:
+                ac_mode = AcMode(ac_mode)
+            else:
+                ac_mode = AcMode.NOT_AVAILABLE
+            # Byte 2 Bit 4-1 AC fan speed
+            ac_fan_speed = ba2int(bits[8 + 4 : 8 + 8])
+            if ac_fan_speed in self._set_AcFanSpeed:
+                ac_fan_speed = AcFanSpeed(ac_fan_speed)
+            else:
+                ac_fan_speed = AcFanSpeed.NOT_AVAILABLE
+            # Byte 3 Setpoint
+            setpoint = (ba2int(bits[16 : 16 + 8]) + 100) / 10
+            # Byte 4 Bit 4 Turbo active
+            turbo_active = bool(bits[24 + 4])
+            # Byte 4 Bit 3 Bypass active
+            bypass_active = bool(bits[24 + 5])
+            # Byte 4 Bit 2 Spill active
+            spill_active = bool(bits[24 + 6])
+            # Byte 4 Bit 1 Timer set
+            timer_set = bool(bits[24 + 7])
+            # Byte 5-6 Temperature
+            temperature = ba2int(bits[32 : 32 + 16])
+            if temperature <= 2000:
+                temperature = (temperature - 500) / 10
+            else:  # Other: Not available
+                temperature = None
+            # Byte 7-8 Error code
+            error_code = ba2int(bits[48 : 48 + 16])
+
+            ac_status.append(
+                AcStatus(
+                    ac_power_state,
+                    ac_number,
+                    ac_mode,
+                    ac_fan_speed,
+                    setpoint,
+                    turbo_active,
+                    bypass_active,
+                    spill_active,
+                    timer_set,
+                    temperature,
+                    error_code,
+                )
+            )
+
+        return AcStatusData(ac_status)
 
     def decode_extended(self, bytes: bytes) -> Data:
         # Sub message type (2 bytes)
@@ -307,7 +388,95 @@ class PacketDecoder:
                 raise ValueError(f"Unknown sub message type: {hex(sub_message_type)}")
 
     def decode_ac_ability(self, bytes: bytes) -> Data:
-        raise NotImplementedError()
+        if len(bytes) == 0:
+            return AcAbilityRequestData(None)
+        if len(bytes) == 1:
+            return AcAbilityRequestData(struct.unpack(">B", bytes[0:1])[0])
+
+        ac_ability: list[AcAbility] = []
+        bits = bitarray(endian="big")
+
+        while len(bytes) > 2:
+            # Byte 3 AC number
+            ac_number = struct.unpack(">B", bytes[0:1])[0]
+            # Byte 4 Following data length
+            length = struct.unpack(">B", bytes[1:2])[0]
+            # Byte 5-20 AC Name (Null terminated if nulls fit)
+            name = bytes[2:18].decode("ascii").split("\x00")[0]
+            # Byte 21 start zone number
+            start_zone_number = struct.unpack(">B", bytes[18:19])[0]
+            # Byte 22 zone count
+            zone_count = struct.unpack(">B", bytes[19:20])[0]
+
+            bits.clear()
+            bits.frombytes(bytes[20:22])
+            print(bits)
+            # Byte 23 Bit 5 Cool mode
+            supports_mode_cool = bool(bits[3])
+            # Byte 23 Bit 4 Fan mode
+            supports_mode_fan = bool(bits[4])
+            # Byte 23 Bit 3 Dry mode
+            supports_mode_dry = bool(bits[5])
+            # Byte 23 Bit 2 Heat mode
+            supports_mode_heat = bool(bits[6])
+            # Byte 23 Bit 1 Auto mode
+            supports_mode_auto = bool(bits[7])
+            # Byte 24 Bit 8 Fan speed intelligent auto
+            supports_fan_speed_intelligent_auto = bool(bits[8 + 0])
+            # Byte 24 Bit 7 Fan speed turbo
+            supports_fan_speed_turbo = bool(bits[8 + 1])
+            # Byte 24 Bit 6 Fan speed powerful
+            supports_fan_speed_powerful = bool(bits[8 + 2])
+            # Byte 24 Bit 5 Fan speed high
+            supports_fan_speed_high = bool(bits[8 + 3])
+            # Byte 24 Bit 4 Fan speed medium
+            supports_fan_speed_medium = bool(bits[8 + 4])
+            # Byte 24 Bit 3 Fan speed low
+            supports_fan_speed_low = bool(bits[8 + 5])
+            # Byte 24 Bit 2 Fan speed quiet
+            supports_fan_speed_quiet = bool(bits[8 + 6])
+            # Byte 24 Bit 1 Fan speed auto
+            supports_fan_speed_auto = bool(bits[8 + 7])
+
+            # Byte 25 Min cool set point
+            min_cool_set_point = struct.unpack(">B", bytes[22:23])[0]
+            # Byte 26 Max cool set point
+            max_cool_set_point = struct.unpack(">B", bytes[23:24])[0]
+            # Byte 27 Min heat set point
+            min_heat_set_point = struct.unpack(">B", bytes[24:25])[0]
+            # Byte 28 Max heat set point
+            max_heat_set_point = struct.unpack(">B", bytes[25:26])[0]
+
+            ac_ability.append(
+                AcAbility(
+                    ac_number,
+                    name,
+                    start_zone_number,
+                    zone_count,
+                    supports_mode_cool,
+                    supports_mode_fan,
+                    supports_mode_dry,
+                    supports_mode_heat,
+                    supports_mode_auto,
+                    supports_fan_speed_intelligent_auto,
+                    supports_fan_speed_turbo,
+                    supports_fan_speed_powerful,
+                    supports_fan_speed_high,
+                    supports_fan_speed_medium,
+                    supports_fan_speed_low,
+                    supports_fan_speed_quiet,
+                    supports_fan_speed_auto,
+                    min_cool_set_point,
+                    max_cool_set_point,
+                    min_heat_set_point,
+                    max_heat_set_point,
+                )
+            )
+
+            # We've now used the first 2 + length bytes, so remove them from the buffer
+            bytes = bytes[2 + length :]
+
+        return AcAbilityData(ac_ability)
 
     def decode_ac_error_information(self, bytes: bytes) -> Data:
         raise NotImplementedError()
