@@ -4,6 +4,10 @@ from airtouch5py.packet_fields import MessageType
 from airtouch5py.packets.datapacket import Data, DataPacket
 from airtouch5py.packets.zone_control import ZoneControlData, ZoneSettingValue
 
+from crc import Calculator, Crc16
+
+_calculator = Calculator(Crc16.MODBUS)
+
 
 class PacketEncoder:
     header = b"\x55\x55\x55\xAA"
@@ -18,12 +22,16 @@ class PacketEncoder:
 
         # Data length (2bytes)
         packet_data = self._encode_data(packet.data)
-        print(packet_data)
         res += struct.pack(">H", len(packet_data))
         # Data
         res += packet_data
 
         # CRC16 check bytes
+        res += struct.pack(">H", _calculator.checksum(res[4:]))
+
+        # TODO: Redundant bytes in message
+        # To prevent the message from containing the same data as header, a 00 is inserted after every three
+        # consecutive 0x55s in the message. The inserted 00 is redundant bytes
 
         return res
 
@@ -60,7 +68,7 @@ class PacketEncoder:
             # Byte 2 Bit 5-4 Keep 0
             # Byte 2 Bit 3-1 Power
             res += struct.pack(
-                ">B", (zone.zone_setting_value.value << 6) | (zone.power.value << 0)
+                ">B", (zone.zone_setting_value.value << 5) | (zone.power.value << 0)
             )
 
             # Byte 3 Value to Set
