@@ -3,7 +3,7 @@ import struct
 from airtouch5py.packet_fields import (
     ControlStatusSubType,
     ExtendedMessageSubType,
-    PacketType,
+    MessageType,
 )
 
 from airtouch5py.packets.ac_ability import (
@@ -93,9 +93,9 @@ class PacketDecoder:
 
         data: Data
         match message_type:
-            case PacketType.CONTROL_STATUS.value:
+            case MessageType.CONTROL_STATUS.value:
                 data = self.decode_control_status(data_bytes)
-            case PacketType.EXTENDED.value:
+            case MessageType.EXTENDED.value:
                 data = self.decode_extended(data_bytes)
             case _:
                 raise ValueError(f"Unknown message type: {hex(message_type)}")

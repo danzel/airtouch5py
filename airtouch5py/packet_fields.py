@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class PacketType(Enum):
+class MessageType(Enum):
     # Control command and status message
     CONTROL_STATUS = 0xC0
     EXTENDED = 0x1F
