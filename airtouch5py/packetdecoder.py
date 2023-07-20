@@ -26,6 +26,10 @@ from airtouch5py.packets.ac_status import (
     AcStatus,
     AcStatusData,
 )
+from airtouch5py.packets.console_version import (
+    ConsoleVersionData,
+    ConsoleVersionRequestData,
+)
 
 from airtouch5py.packets.datapacket import Data, DataPacket
 from airtouch5py.packets.zone_control import (
@@ -517,4 +521,14 @@ class PacketDecoder:
         return ZoneNameData(names)
 
     def decode_console_version(self, bytes: bytes) -> Data:
-        raise NotImplementedError()
+        if len(bytes) == 0:
+            return ConsoleVersionRequestData()
+
+        # Byte 3 Update sign (0 - latest, Other - new version)
+        has_update = struct.unpack(">B", bytes[0:1])[0] != 0
+        # Byte 4 version string length
+        length = struct.unpack(">B", bytes[1:2])[0]
+        # Byte 5..n Version string
+        version = bytes[2 : 2 + length].decode("ascii")
+
+        return ConsoleVersionData(has_update, version)

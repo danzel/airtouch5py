@@ -12,6 +12,10 @@ from airtouch5py.packets.ac_error_information import (
     AcErrorInformationRequestData,
 )
 from airtouch5py.packets.ac_status import AcFanSpeed, AcMode, AcPowerState, AcStatusData
+from airtouch5py.packets.console_version import (
+    ConsoleVersionData,
+    ConsoleVersionRequestData,
+)
 from airtouch5py.packets.datapacket import DataPacket
 from airtouch5py.packets.zone_control import (
     ZoneControlData,
@@ -459,3 +463,39 @@ def test_zone_names_response_multiple():
     z = packet.data.zone_names[2]
     assert z.zone_number == 0x02
     assert z.zone_name == "Bedroom"
+
+
+def test_console_version_request():
+    """
+    Decode the console version (request) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x02\xFF\x30"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0x90B0
+    assert packet.message_id == 0x01
+    assert type(packet.data) is ConsoleVersionRequestData
+
+
+def test_console_version_response():
+    """
+    Decode the console version (request) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x0F\xFF\x30\x00\x0B\x31\x2E\x30\x2E\x33\x2C\x31\x2E\x30\x2E\x33"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0xB090
+    assert packet.message_id == 0x01
+    assert type(packet.data) is ConsoleVersionData
+
+    # Console version
+    assert packet.data.has_update == False
+    assert packet.data.version == "1.0.3,1.0.3"
