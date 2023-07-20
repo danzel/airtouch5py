@@ -18,6 +18,7 @@ from airtouch5py.packets.zone_control import (
     ZoneSettingPower,
     ZoneSettingValue,
 )
+from airtouch5py.packets.zone_name import ZoneNameData, ZoneNameRequestData
 from airtouch5py.packets.zone_status import (
     ControlMethod,
     ZonePowerState,
@@ -362,3 +363,99 @@ def test_ac_error_information_response():
     # AC error information response (AC 0)
     assert packet.data.ac_number == 0x00
     assert packet.data.error_info == "ER: FFFE"
+
+
+def test_zone_names_request_all():
+    """
+    Decode the zone names (request) message as given in the protocol documentation.
+
+    TODO: The docs also say this is 0xFF 0x12?? In the samples they use both.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x02\xFF\x13"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0x90B0
+    assert packet.message_id == 0x01
+    assert type(packet.data) is ZoneNameRequestData
+
+    # All Zones
+    assert packet.data.zone_number == None
+
+
+def test_zone_names_request_single():
+    """
+    Decode the zone names (request) message as given in the protocol documentation.
+
+    TODO: The docs also say this is 0xFF 0x12?? In the samples they use both.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x13\x00"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0x90B0
+    assert packet.message_id == 0x01
+    assert type(packet.data) is ZoneNameRequestData
+
+    # Zone 0
+    assert packet.data.zone_number == 0x00
+
+
+def test_zone_names_response_single():
+    """
+    Decode the zone names (response) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x0A\xFF\x13\x00\x06\x4C\x69\x76\x69\x6E\x67"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0xB090
+    assert packet.message_id == 0x01
+    assert type(packet.data) is ZoneNameData
+    assert len(packet.data.zone_names) == 1
+
+    # Zone 0
+    z = packet.data.zone_names[0]
+    assert z.zone_number == 0x00
+    assert z.zone_name == "Living"
+
+
+def test_zone_names_response_multiple():
+    """
+    Decode the zone names (response) message as given in the protocol documentation.
+    """
+
+    decoder = PacketDecoder()
+    # TODO: Add CRC bytes
+    data = b"\x55\x55\x55\xAA\xb0\x90\x01\x1F\x00\x1D\xFF\x13\x00\x06\x4C\x69\x76\x69\x6E\x67\x01\x07\x4B\x69\x74\x63\x68\x65\x6E\x02\x07\x42\x65\x64\x72\x6F\x6F\x6D"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0xB090
+    assert packet.message_id == 0x01
+    assert type(packet.data) is ZoneNameData
+    assert len(packet.data.zone_names) == 3
+
+    # Zone 0
+    z = packet.data.zone_names[0]
+    assert z.zone_number == 0x00
+    assert z.zone_name == "Living"
+
+    # Zone 1
+    z = packet.data.zone_names[1]
+    assert z.zone_number == 0x01
+    assert z.zone_name == "Kitchen"
+
+    # Zone 2
+    z = packet.data.zone_names[2]
+    assert z.zone_number == 0x02
+    assert z.zone_name == "Bedroom"

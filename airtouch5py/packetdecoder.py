@@ -34,6 +34,7 @@ from airtouch5py.packets.zone_control import (
     ZoneSettingPower,
     ZoneSettingValue,
 )
+from airtouch5py.packets.zone_name import ZoneName, ZoneNameData, ZoneNameRequestData
 
 from airtouch5py.packets.zone_status import (
     ControlMethod,
@@ -414,7 +415,6 @@ class PacketDecoder:
 
             bits.clear()
             bits.frombytes(bytes[20:22])
-            print(bits)
             # Byte 23 Bit 5 Cool mode
             supports_mode_cool = bool(bits[3])
             # Byte 23 Bit 4 Fan mode
@@ -495,7 +495,26 @@ class PacketDecoder:
         return AcErrorInformationData(ac_number, error_info)
 
     def decode_zone_name(self, bytes: bytes) -> Data:
-        raise NotImplementedError()
+        if len(bytes) == 0:
+            return ZoneNameRequestData(None)
+        if len(bytes) == 1:
+            return ZoneNameRequestData(struct.unpack(">B", bytes[0:1])[0])
+
+        names: list[ZoneName] = []
+
+        while len(bytes) > 2:
+            # Byte 3 Zone number
+            zone_number = struct.unpack(">B", bytes[0:1])[0]
+            # Byte 4 Name  length
+            length = struct.unpack(">B", bytes[1:2])[0]
+            # Byte 5..n Zone Name
+            name = bytes[2 : 2 + length].decode("ascii")
+
+            names.append(ZoneName(zone_number, name))
+            # We've now used the first 2 + length bytes, so remove them from the buffer
+            bytes = bytes[2 + length :]
+
+        return ZoneNameData(names)
 
     def decode_console_version(self, bytes: bytes) -> Data:
         raise NotImplementedError()
