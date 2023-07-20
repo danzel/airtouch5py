@@ -1,4 +1,4 @@
-from airtouch5py.packetdecoder import PacketDecoder
+from airtouch5py.packet_decoder import PacketDecoder
 from airtouch5py.packets.ac_ability import AcAbilityData, AcAbilityRequestData
 from airtouch5py.packets.ac_control import (
     AcControlData,
@@ -126,7 +126,7 @@ def test_decode_zone_status_response_example():
     assert zone.is_low_battery == False
 
 
-def test_ac_control_turn_off_second_ac():
+def test_ac_control_turn_off_second_ac_example():
     """
     Decode the AC control message as given in the protocol documentation.
 
@@ -157,7 +157,7 @@ def test_ac_control_turn_off_second_ac():
     assert c.setpoint == 35.5
 
 
-def test_ac_control_first_ac_cool_second_ac_26_degrees():
+def test_ac_control_first_ac_cool_second_ac_26_degrees_example():
     """
     Decode the AC control message as given in the protocol documentation.
 
@@ -196,7 +196,7 @@ def test_ac_control_first_ac_cool_second_ac_26_degrees():
     assert c.setpoint == 26.0
 
 
-def test_ac_status_request():
+def test_ac_status_request_example():
     """
     Decode the AC status (request) message as given in the protocol documentation.
     """
@@ -215,7 +215,7 @@ def test_ac_status_request():
     assert len(packet.data.ac_status) == 0
 
 
-def test_ac_status_response_2_acs():
+def test_ac_status_response_2_acs_example():
     """
     Decode the AC status (response) message as given in the protocol documentation.
 
@@ -264,7 +264,7 @@ def test_ac_status_response_2_acs():
     assert ac.error_code == 0  # No error
 
 
-def test_extended_ac_ability_request():
+def test_extended_ac_ability_request_example():
     """
     Decode the extended AC ability (request) message as given in the protocol documentation.
     """
@@ -283,7 +283,7 @@ def test_extended_ac_ability_request():
     assert packet.data.ac_number == 0x00
 
 
-def test_extended_ac_ability_response():
+def test_extended_ac_ability_response_example():
     """
     Decode the extended AC ability (response) message as given in the protocol documentation.
 
@@ -330,7 +330,7 @@ def test_extended_ac_ability_response():
     assert ac.max_heat_set_point == 31.0
 
 
-def test_ac_error_information_request():
+def test_ac_error_information_request_example():
     """
     Decode the AC error information (request) message as given in the protocol documentation.
     """
@@ -349,7 +349,7 @@ def test_ac_error_information_request():
     assert packet.data.ac_number == 0x00
 
 
-def test_ac_error_information_response():
+def test_ac_error_information_response_example():
     """
     Decode the AC error information (response) message as given in the protocol documentation.
     """
@@ -369,7 +369,7 @@ def test_ac_error_information_response():
     assert packet.data.error_info == "ER: FFFE"
 
 
-def test_zone_names_request_all():
+def test_zone_names_request_all_example():
     """
     Decode the zone names (request) message as given in the protocol documentation.
 
@@ -390,7 +390,7 @@ def test_zone_names_request_all():
     assert packet.data.zone_number == None
 
 
-def test_zone_names_request_single():
+def test_zone_names_request_single_example():
     """
     Decode the zone names (request) message as given in the protocol documentation.
 
@@ -411,7 +411,7 @@ def test_zone_names_request_single():
     assert packet.data.zone_number == 0x00
 
 
-def test_zone_names_response_single():
+def test_zone_names_response_single_example():
     """
     Decode the zone names (response) message as given in the protocol documentation.
     """
@@ -433,7 +433,7 @@ def test_zone_names_response_single():
     assert z.zone_name == "Living"
 
 
-def test_zone_names_response_multiple():
+def test_zone_names_response_multiple_example():
     """
     Decode the zone names (response) message as given in the protocol documentation.
     """
@@ -465,7 +465,7 @@ def test_zone_names_response_multiple():
     assert z.zone_name == "Bedroom"
 
 
-def test_console_version_request():
+def test_console_version_request_example():
     """
     Decode the console version (request) message as given in the protocol documentation.
     """
@@ -481,7 +481,7 @@ def test_console_version_request():
     assert type(packet.data) is ConsoleVersionRequestData
 
 
-def test_console_version_response():
+def test_console_version_response_example():
     """
     Decode the console version (request) message as given in the protocol documentation.
     """
