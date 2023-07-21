@@ -23,10 +23,10 @@ class AcAbility:
     supports_fan_speed_auto: bool
 
     # The docs are wrong for these (they are all cool)
-    min_cool_set_point: float
-    max_cool_set_point: float
-    min_heat_set_point: float
-    max_heat_set_point: float
+    min_cool_set_point: int
+    max_cool_set_point: int
+    min_heat_set_point: int
+    max_heat_set_point: int
 
     def __init__(
         self,
@@ -47,10 +47,10 @@ class AcAbility:
         supports_fan_speed_low: bool,
         supports_fan_speed_quiet: bool,
         supports_fan_speed_auto: bool,
-        min_cool_set_point: float,
-        max_cool_set_point: float,
-        min_heat_set_point: float,
-        max_heat_set_point: float,
+        min_cool_set_point: int,
+        max_cool_set_point: int,
+        min_heat_set_point: int,
+        max_heat_set_point: int,
     ):
         self.ac_number = ac_number
         self.ac_name = ac_name

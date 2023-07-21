@@ -68,7 +68,7 @@ def test_decode_zone_status_request_example():
 
     decoder = PacketDecoder()
     # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x80\xB0\x01\xC0\x00\x08\x21\x00\x00\x00\x00\x00\x00\x00"
+    data = b"\x55\x55\x55\xAA\x80\xB0\x01\xC0\x00\x08\x21\x00\x00\x00\x00\x00\x00\x00\xA4\x31"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -88,8 +88,7 @@ def test_decode_zone_status_response_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\xB0\x80\x01\xC0\x00\x18\x21\x00\x00\x00\x00\x08\x00\x02\x40\x80\x96\x80\x02\xE7\x00\x00\x01\x64\xFF\x00\x07\xFF\x00\x00"
+    data = b"\x55\x55\x55\xAA\xB0\x80\x01\xC0\x00\x18\x21\x00\x00\x00\x00\x08\x00\x02\x40\x80\x96\x80\x02\xE7\x00\x00\x01\x64\xFF\x00\x07\xFF\x00\x00\xB9\xEF"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -125,7 +124,7 @@ def test_decode_zone_status_response_example():
     assert zone.is_low_battery == False
 
 
-def test_ac_control_turn_off_second_ac_example():
+def test_decode_ac_control_turn_off_second_ac_example():
     """
     Decode the AC control message as given in the protocol documentation.
 
@@ -133,8 +132,7 @@ def test_ac_control_turn_off_second_ac_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x80\xb0\x01\xC0\x00\x0C\x22\x00\x00\x00\x00\x04\x00\x01\x21\xFF\x00\xFF"
+    data = b"\x55\x55\x55\xAA\x80\xb0\x01\xC0\x00\x0C\x22\x00\x00\x00\x00\x04\x00\x01\x21\xFF\x00\xFF\xD3\x47"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -156,7 +154,7 @@ def test_ac_control_turn_off_second_ac_example():
     assert c.setpoint == 35.5
 
 
-def test_ac_control_first_ac_cool_second_ac_26_degrees_example():
+def test_decode_ac_control_first_ac_cool_second_ac_26_degrees_example():
     """
     Decode the AC control message as given in the protocol documentation.
 
@@ -164,8 +162,7 @@ def test_ac_control_first_ac_cool_second_ac_26_degrees_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x80\xb0\x01\xC0\x00\x10\x22\x00\x00\x00\x00\x04\x00\x02\x00\x4F\x00\xFF\x01\xFF\x40\xA0"
+    data = b"\x55\x55\x55\xAA\x80\xb0\x01\xC0\x00\x10\x22\x00\x00\x00\x00\x04\x00\x02\x00\x4F\x00\xFF\x01\xFF\x40\xA0\x10\x4B"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -195,14 +192,13 @@ def test_ac_control_first_ac_cool_second_ac_26_degrees_example():
     assert c.setpoint == 26.0
 
 
-def test_ac_status_request_example():
+def test_decode_ac_status_request_example():
     """
     Decode the AC status (request) message as given in the protocol documentation.
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x80\xB0\x01\xC0\x00\x08\x23\x00\x00\x00\x00\x00\x00\x00"
+    data = b"\x55\x55\x55\xAA\x80\xB0\x01\xC0\x00\x08\x23\x00\x00\x00\x00\x00\x00\x00\x7D\xB0"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -214,7 +210,7 @@ def test_ac_status_request_example():
     assert len(packet.data.ac_status) == 0
 
 
-def test_ac_status_response_2_acs_example():
+def test_decode_ac_status_response_2_acs_example():
     """
     Decode the AC status (response) message as given in the protocol documentation.
 
@@ -222,8 +218,7 @@ def test_ac_status_response_2_acs_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\xB0\x80\x01\xC0\x00\x1C\x23\x00\x00\x00\x00\x0A\x00\x02\x10\x12\x78\xC0\x02\xDA\x00\x00\x80\x00\x01\x42\x64\xC0\x02\xE4\x00\x00\x80\x00"
+    data = b"\x55\x55\x55\xAA\xB0\x80\x01\xC0\x00\x1C\x23\x00\x00\x00\x00\x0A\x00\x02\x10\x12\x78\xC0\x02\xDA\x00\x00\x80\x00\x01\x42\x64\xC0\x02\xE4\x00\x00\x80\x00\x3D\x79"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -263,14 +258,13 @@ def test_ac_status_response_2_acs_example():
     assert ac.error_code == 0  # No error
 
 
-def test_extended_ac_ability_request_example():
+def test_decode_extended_ac_ability_request_example():
     """
     Decode the extended AC ability (request) message as given in the protocol documentation.
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x11\x00"
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x11\x00\x09\x83"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -282,7 +276,7 @@ def test_extended_ac_ability_request_example():
     assert packet.data.ac_number == 0x00
 
 
-def test_extended_ac_ability_response_example():
+def test_decode_extended_ac_ability_response_example():
     """
     Decode the extended AC ability (response) message as given in the protocol documentation.
 
@@ -292,8 +286,7 @@ def test_extended_ac_ability_response_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x1C\xFF\x11\x00\x18\x55\x4E\x49\x54\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x17\x1D\x10\x1f\x12\x1f"
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x1C\xFF\x11\x00\x18\x55\x4E\x49\x54\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x17\x1D\x10\x1f\x12\x1f\xa2\x26"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -329,14 +322,13 @@ def test_extended_ac_ability_response_example():
     assert ac.max_heat_set_point == 31.0
 
 
-def test_ac_error_information_request_example():
+def test_decode_ac_error_information_request_example():
     """
     Decode the AC error information (request) message as given in the protocol documentation.
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x10\x00"
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x10\x00\x99\x82"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -348,14 +340,16 @@ def test_ac_error_information_request_example():
     assert packet.data.ac_number == 0x00
 
 
-def test_ac_error_information_response_example():
+def test_decode_ac_error_information_response_example():
     """
     Decode the AC error information (response) message as given in the protocol documentation.
+
+    Example has length as 0x1A, but it should be 0x0C
     """
 
     decoder = PacketDecoder()
     # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x1A\xFF\x10\x00\x08\x45\x52\x3A\x20\x46\x46\x46\x45"
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x0C\xFF\x10\x00\x08\x45\x52\x3A\x20\x46\x46\x46\x45"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -368,7 +362,7 @@ def test_ac_error_information_response_example():
     assert packet.data.error_info == "ER: FFFE"
 
 
-def test_zone_names_request_all_example():
+def test_decode_zone_names_request_all_example():
     """
     Decode the zone names (request) message as given in the protocol documentation.
 
@@ -376,8 +370,7 @@ def test_zone_names_request_all_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x02\xFF\x13"
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x02\xFF\x13\x42\xCD"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -389,7 +382,7 @@ def test_zone_names_request_all_example():
     assert packet.data.zone_number == None
 
 
-def test_zone_names_request_single_example():
+def test_decode_zone_names_request_single_example():
     """
     Decode the zone names (request) message as given in the protocol documentation.
 
@@ -397,8 +390,7 @@ def test_zone_names_request_single_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x13\x00"
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x03\xFF\x13\x00\x69\x82"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -410,14 +402,13 @@ def test_zone_names_request_single_example():
     assert packet.data.zone_number == 0x00
 
 
-def test_zone_names_response_single_example():
+def test_decode_zone_names_response_single_example():
     """
     Decode the zone names (response) message as given in the protocol documentation.
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x0A\xFF\x13\x00\x06\x4C\x69\x76\x69\x6E\x67"
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x0A\xFF\x13\x00\x06\x4C\x69\x76\x69\x6E\x67\xB6\x2F"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -432,14 +423,15 @@ def test_zone_names_response_single_example():
     assert z.zone_name == "Living"
 
 
-def test_zone_names_response_multiple_example():
+def test_decode_zone_names_response_multiple_example():
     """
     Decode the zone names (response) message as given in the protocol documentation.
+
+    Sample has length as 0x1D but it should be 0x1C
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\xb0\x90\x01\x1F\x00\x1D\xFF\x13\x00\x06\x4C\x69\x76\x69\x6E\x67\x01\x07\x4B\x69\x74\x63\x68\x65\x6E\x02\x07\x42\x65\x64\x72\x6F\x6F\x6D"
+    data = b"\x55\x55\x55\xAA\xb0\x90\x01\x1F\x00\x1C\xFF\x13\x00\x06\x4C\x69\x76\x69\x6E\x67\x01\x07\x4B\x69\x74\x63\x68\x65\x6E\x02\x07\x42\x65\x64\x72\x6F\x6F\x6D\xAE\x8B"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -464,14 +456,13 @@ def test_zone_names_response_multiple_example():
     assert z.zone_name == "Bedroom"
 
 
-def test_console_version_request_example():
+def test_decode_console_version_request_example():
     """
     Decode the console version (request) message as given in the protocol documentation.
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x02\xFF\x30"
+    data = b"\x55\x55\x55\xAA\x90\xB0\x01\x1F\x00\x02\xFF\x30\x9B\x8C"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
@@ -486,8 +477,7 @@ def test_console_version_response_example():
     """
 
     decoder = PacketDecoder()
-    # TODO: Add CRC bytes
-    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x0F\xFF\x30\x00\x0B\x31\x2E\x30\x2E\x33\x2C\x31\x2E\x30\x2E\x33"
+    data = b"\x55\x55\x55\xAA\xB0\x90\x01\x1F\x00\x0F\xFF\x30\x00\x0B\x31\x2E\x30\x2E\x33\x2C\x31\x2E\x30\x2E\x33\x13\x28"
     packet: DataPacket = decoder.decode(data)
 
     # Packet
