@@ -43,9 +43,10 @@ class PacketEncoder:
         # CRC16 check bytes
         res += struct.pack(">H", _calculator.checksum(res[4:]))
 
-        # TODO: Redundant bytes in message
+        # h. Redundant bytes in message
         # To prevent the message from containing the same data as header, a 00 is inserted after every three
         # consecutive 0x55s in the message. The inserted 00 is redundant bytes
+        # ^^ In testing this actually doesn't happen. I named a zone UUUUUUU and it didn't insert any 00s
 
         return res
 
