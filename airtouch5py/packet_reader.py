@@ -1,5 +1,9 @@
+import logging
+
 from airtouch5py.packet_decoder import PacketDecoder
 from airtouch5py.packets.datapacket import DataPacket
+
+_LOGGER = logging.getLogger(__name__)
 
 # Header (4) + Address (2) + Message Id (1) + Message type (1) + Data length (2) + check bytes (2)
 MINIMUM_PACKET_LENGTH = 12
@@ -46,9 +50,11 @@ class PacketReader:
                 break
 
             # Decode the packet
-            # TODO: try/catch this
-            packet = self._packet_decoder.decode(self._buffer[:packet_length])
-            packets.append(packet)
+            try:
+                packet = self._packet_decoder.decode(self._buffer[:packet_length])
+                packets.append(packet)
+            except Exception as e:
+                _LOGGER.debug(f"Error decoding packet: {e}")
 
             # remove the packet from the buffer
             self._buffer = self._buffer[packet_length:]
