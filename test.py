@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 from pprint import pprint
 
 from airtouch5py.airtouch5_client import Airtouch5Client, Airtouch5ConnectionStateChange
