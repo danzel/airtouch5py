@@ -155,8 +155,18 @@ class Airtouch5SimpleClient:
         Calls the matching callbacks.
         """
         while True:
-            packet = await self._client.packets_received.get()
-            print(f"maintain Received packet {packet}")
+            # Wait for a packet, or timeout after 10 minutes
+            packet: DataPacket | Airtouch5ConnectionStateChange
+            try:
+                packet = await asyncio.wait_for(
+                    self._client.packets_received.get(), 10 * 60
+                )
+            except asyncio.TimeoutError:
+                _LOGGER.error("Timeout waiting for packet, reconnecting")
+                await self._client.disconnect()
+                packet = Airtouch5ConnectionStateChange.DISCONNECTED
+
+            _LOGGER.debug(f"maintain Received packet {packet}")
             if packet is Airtouch5ConnectionStateChange.DISCONNECTED:
                 [cb(packet) for cb in self.connection_state_callbacks]
                 _LOGGER.warning("Disconnected from Airtouch 5, reconnecting")
