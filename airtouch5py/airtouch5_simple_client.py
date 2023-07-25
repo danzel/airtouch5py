@@ -5,11 +5,11 @@ from typing import Callable, TypeVar
 from airtouch5py.airtouch5_client import Airtouch5Client, Airtouch5ConnectionStateChange
 from airtouch5py.data_packet_factory import DataPacketFactory
 from airtouch5py.packets.ac_ability import AcAbility, AcAbilityData
-from airtouch5py.packets.ac_status import AcStatusData
+from airtouch5py.packets.ac_status import AcStatus, AcStatusData
 from airtouch5py.packets.console_version import ConsoleVersionData
 from airtouch5py.packets.datapacket import Data, DataPacket
 from airtouch5py.packets.zone_name import ZoneName, ZoneNameData
-from airtouch5py.packets.zone_status import ZoneStatusData
+from airtouch5py.packets.zone_status import ZoneStatusData, ZoneStatusZone
 
 _LOGGER = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -19,9 +19,10 @@ class Airtouch5SimpleClient:
     """
     A simple Airtouch5 client.
 
+    Usage:
     Call connect_and_stay_connected().
     Add listeners to *_callbacks
-    Send initial requests for zone status and ac status (These will be updated as they change in the future, but you should do an initial request to get initial state)
+    The Airtouch5 will automatically send out updates to zone status and ac status as they happen.
     """
 
     data_packet_factory: DataPacketFactory
@@ -32,11 +33,15 @@ class Airtouch5SimpleClient:
     zones: list[ZoneName]
     # Populated after connect_and_stay_connected
     console_version: str
+    # Populated after connect_and_stay_connected
+    latest_ac_status: dict[int, AcStatus]
+    # Populated after connect_and_stay_connected
+    latest_zone_status: dict[int, ZoneStatusZone]
 
     connection_state_callbacks: list[Callable[[Airtouch5ConnectionStateChange], None]]
     data_packet_callbacks: list[Callable[[DataPacket], None]]
-    zone_status_callbacks: list[Callable[[ZoneStatusData], None]]
-    ac_status_callbacks: list[Callable[[AcStatusData], None]]
+    ac_status_callbacks: list[Callable[[dict[int, AcStatus]], None]]
+    zone_status_callbacks: list[Callable[[dict[int, ZoneStatusZone]], None]]
 
     _client: Airtouch5Client
     _connection_task: asyncio.Task[None] | None
@@ -52,6 +57,8 @@ class Airtouch5SimpleClient:
 
         self.connection_state_callbacks = []
         self.data_packet_callbacks = []
+        self.ac_status_callbacks = []
+        self.zone_status_callbacks = []
 
     async def test_connection(self) -> None:
         """
@@ -87,7 +94,7 @@ class Airtouch5SimpleClient:
     async def connect_and_stay_connected(self) -> None:
         """
         Connect, and reconnect if we disconnect.
-        Gets the AC ability and zone names, and then waits for updates.
+        Gets the AC ability and zone names, initial zone status and ac status, and then waits for updates.
         Throws if we fail to make the initial connection.
         """
         await self._client.connect()
@@ -107,6 +114,20 @@ class Airtouch5SimpleClient:
         self.console_version = (
             await self._wait_for_packet_or_throw(ConsoleVersionData)
         ).version
+
+        # Get the initial zone status
+        await self._client.send_packet(self.data_packet_factory.zone_status_request())
+        self.latest_zone_status = {
+            zone.zone_number: zone
+            for zone in (await self._wait_for_packet_or_throw(ZoneStatusData)).zones
+        }
+
+        # Get the initial ac status
+        await self._client.send_packet(self.data_packet_factory.ac_status_request())
+        self.latest_ac_status = {
+            ac.ac_number: ac
+            for ac in (await self._wait_for_packet_or_throw(AcStatusData)).ac_status
+        }
 
         # Start up the connection/reader task
         self._connection_task = asyncio.create_task(self._maintain_connection())
@@ -138,7 +159,7 @@ class Airtouch5SimpleClient:
             print(f"maintain Received packet {packet}")
             if packet is Airtouch5ConnectionStateChange.DISCONNECTED:
                 [cb(packet) for cb in self.connection_state_callbacks]
-                _LOGGER.warn("Disconnected from Airtouch 5, reconnecting")
+                _LOGGER.warning("Disconnected from Airtouch 5, reconnecting")
                 while True:
                     try:
                         await self._client.connect()
@@ -153,9 +174,17 @@ class Airtouch5SimpleClient:
             elif isinstance(packet, DataPacket):
                 [cb(packet) for cb in self.data_packet_callbacks]
                 if isinstance(packet.data, ZoneStatusData):
-                    [cb(packet.data) for cb in self.zone_status_callbacks]
+                    # convert the list to a dict, store it and broadcast it
+                    self.latest_zone_status = {
+                        zone.zone_number: zone for zone in packet.data.zones
+                    }
+                    [cb(self.latest_zone_status) for cb in self.zone_status_callbacks]
                 if isinstance(packet.data, AcStatusData):
-                    [cb(packet.data) for cb in self.ac_status_callbacks]
+                    # convert the list to a dict, store it and broadcast it
+                    self.latest_ac_status = {
+                        ac.ac_number: ac for ac in packet.data.ac_status
+                    }
+                    [cb(self.latest_ac_status) for cb in self.ac_status_callbacks]
             else:
                 _LOGGER.error(f"Received unknown packet type {packet}")
 

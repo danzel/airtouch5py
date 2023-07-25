@@ -70,14 +70,18 @@ async def main(ip: str):
         print(f"Failed: {e}")
         return
     print(f"Connected, we have {len(client.zones)} zones and {len(client.ac)} acs")
+    print(f"Initial ac status {client.latest_ac_status}")
+    print(f"Initial zone status {client.latest_zone_status}")
 
     client.connection_state_callbacks.append(
         lambda x: print(f"Connection state changed to {x}")
     )
     client.data_packet_callbacks.append(print_packet)
 
-    await client.send_packet(client.data_packet_factory.zone_status_request())
-    await client.send_packet(client.data_packet_factory.ac_status_request())
+    client.zone_status_callbacks.append(lambda x: print(f"Zone status changed {x}"))
+
+    # await client.send_packet(client.data_packet_factory.zone_status_request())
+    # await client.send_packet(client.data_packet_factory.ac_status_request())
 
     await asyncio.sleep(999)
 
