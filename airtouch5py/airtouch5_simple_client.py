@@ -5,9 +5,11 @@ from typing import Callable, TypeVar
 from airtouch5py.airtouch5_client import Airtouch5Client, Airtouch5ConnectionStateChange
 from airtouch5py.data_packet_factory import DataPacketFactory
 from airtouch5py.packets.ac_ability import AcAbility, AcAbilityData
+from airtouch5py.packets.ac_status import AcStatusData
 from airtouch5py.packets.console_version import ConsoleVersionData
 from airtouch5py.packets.datapacket import Data, DataPacket
 from airtouch5py.packets.zone_name import ZoneName, ZoneNameData
+from airtouch5py.packets.zone_status import ZoneStatusData
 
 _LOGGER = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -18,7 +20,7 @@ class Airtouch5SimpleClient:
     A simple Airtouch5 client.
 
     Call connect_and_stay_connected().
-    Add listeners to {TODO}
+    Add listeners to *_callbacks
     Send initial requests for zone status and ac status (These will be updated as they change in the future, but you should do an initial request to get initial state)
     """
 
@@ -28,9 +30,13 @@ class Airtouch5SimpleClient:
     ac: list[AcAbility]
     # Populated after connect_and_stay_connected
     zones: list[ZoneName]
+    # Populated after connect_and_stay_connected
+    console_version: str
 
-    connection_callbacks: list[Callable[[Airtouch5ConnectionStateChange], None]]
-    message_callbacks: list[Callable[[DataPacket], None]]
+    connection_state_callbacks: list[Callable[[Airtouch5ConnectionStateChange], None]]
+    data_packet_callbacks: list[Callable[[DataPacket], None]]
+    zone_status_callbacks: list[Callable[[ZoneStatusData], None]]
+    ac_status_callbacks: list[Callable[[AcStatusData], None]]
 
     _client: Airtouch5Client
     _connection_task: asyncio.Task[None] | None
@@ -39,10 +45,13 @@ class Airtouch5SimpleClient:
         self.ip = ip
         self._client = Airtouch5Client(ip)
         self.data_packet_factory = DataPacketFactory()
+
         self.ac = []
         self.zones = []
-        self.connection_callbacks = []
-        self.message_callbacks = []
+        self.console_version = ""
+
+        self.connection_state_callbacks = []
+        self.data_packet_callbacks = []
 
     async def test_connection(self) -> None:
         """
@@ -91,6 +100,14 @@ class Airtouch5SimpleClient:
         await self._client.send_packet(self.data_packet_factory.zone_name_request())
         self.zones = (await self._wait_for_packet_or_throw(ZoneNameData)).zone_names
 
+        # Get the version
+        await self._client.send_packet(
+            self.data_packet_factory.console_version_request()
+        )
+        self.console_version = (
+            await self._wait_for_packet_or_throw(ConsoleVersionData)
+        ).version
+
         # Start up the connection/reader task
         self._connection_task = asyncio.create_task(self._maintain_connection())
 
@@ -120,7 +137,7 @@ class Airtouch5SimpleClient:
             packet = await self._client.packets_received.get()
             print(f"maintain Received packet {packet}")
             if packet is Airtouch5ConnectionStateChange.DISCONNECTED:
-                [cb(packet) for cb in self.connection_callbacks]
+                [cb(packet) for cb in self.connection_state_callbacks]
                 _LOGGER.warn("Disconnected from Airtouch 5, reconnecting")
                 while True:
                     try:
@@ -132,9 +149,13 @@ class Airtouch5SimpleClient:
                         )
                         await asyncio.sleep(5)
             elif packet is Airtouch5ConnectionStateChange.CONNECTED:
-                [cb(packet) for cb in self.connection_callbacks]
+                [cb(packet) for cb in self.connection_state_callbacks]
             elif isinstance(packet, DataPacket):
-                [cb(packet) for cb in self.message_callbacks]
+                [cb(packet) for cb in self.data_packet_callbacks]
+                if isinstance(packet.data, ZoneStatusData):
+                    [cb(packet.data) for cb in self.zone_status_callbacks]
+                if isinstance(packet.data, AcStatusData):
+                    [cb(packet.data) for cb in self.ac_status_callbacks]
             else:
                 _LOGGER.error(f"Received unknown packet type {packet}")
 

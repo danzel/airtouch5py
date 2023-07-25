@@ -71,10 +71,10 @@ async def main(ip: str):
         return
     print(f"Connected, we have {len(client.zones)} zones and {len(client.ac)} acs")
 
-    client.connection_callbacks.append(
+    client.connection_state_callbacks.append(
         lambda x: print(f"Connection state changed to {x}")
     )
-    client.message_callbacks.append(print_packet)
+    client.data_packet_callbacks.append(print_packet)
 
     await client.send_packet(client.data_packet_factory.zone_status_request())
     await client.send_packet(client.data_packet_factory.ac_status_request())
