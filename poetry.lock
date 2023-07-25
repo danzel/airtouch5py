@@ -538,4 +538,4 @@ trailrunner = ">=1.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "7abae3aa8ec25d832c310960c9be0494f364cd1a1e224173fc32d831c0abb6b6"
+content-hash = "399557f9cac1d8ec36c89346f31c0319cfa8335d6381d0ed3e57b6b1b8ff9b42"

@@ -9,6 +9,8 @@ readme = "README.md"
 python = "^3.11"
 bitarray = "^2.8.0"
 crc = "^4.3.0"
+
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
 ufmt = "^2.1.0"
 
