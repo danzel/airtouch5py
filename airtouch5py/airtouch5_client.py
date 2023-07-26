@@ -41,6 +41,8 @@ class Airtouch5Client:
     _reader: asyncio.StreamReader | None
     _writer: asyncio.StreamWriter | None
 
+    _disconnect_lock: asyncio.Lock
+
     def __init__(self, ip: str):
         self.ip = ip
         self.packets_received = asyncio.Queue()
@@ -49,6 +51,7 @@ class Airtouch5Client:
         self._connected = False
         self._should_be_connected = False
         self._writer, self._reader = None, None
+        self._disconnect_lock = asyncio.Lock()
 
     async def connect(self):
         """
@@ -57,6 +60,11 @@ class Airtouch5Client:
         Throws if we fail to connect.
         Otherwise puts a connected message in the queue and starts up the reader task.
         """
+
+        # Clear the queue before we connect (Might be dangling stuff in it from a previous connection)
+        while not self.packets_received.empty():
+            self.packets_received.get_nowait()
+
         _LOGGER.info(f"Connecting to {self.ip}:9005")
         self._reader, self._writer = await asyncio.wait_for(
             asyncio.open_connection(self.ip, 9005), 5
@@ -67,41 +75,69 @@ class Airtouch5Client:
         self._reader_task = asyncio.create_task(self._read_packets())
 
     async def disconnect(self):
-        writer = self._writer
+        """
+        Disconnect the socket if it is connected.
+        If stop_reader_task is true, also stop the reader task (Normally you should do this, unless called from the reader task)
+        Pushes a DISCONNECTED message in to the queue if we actually disconnected (were connected before)
+        """
+        async with self._disconnect_lock:
+            did_disconnect = False
+            if self._writer is not None:
+                did_disconnect = True
+                self._writer.close()
+                try:
+                    await self._writer.wait_closed()
+                except Exception:
+                    # Ignore exceptions when closing
+                    _LOGGER.debug("Exception when closing writer", exc_info=True)
 
-        if writer is not None:
-            writer.close()
-            await writer.wait_closed()
+            if self._reader_task is not None:
+                self._reader_task.cancel()
+                self._reader_task = None
+
             self._writer, self._reader = None, None
-
-        if self._reader_task is not None:
-            self._reader_task.cancel()
-            self._reader_task = None
+            if did_disconnect:
+                self.packets_received.put_nowait(
+                    Airtouch5ConnectionStateChange.DISCONNECTED
+                )
 
     async def _read_packets(self):
         """
         Continuously read packets from the socket and put them in the queue.
+        If we detect the socket has died, disconnect it
         """
         reader = self._reader
         if reader is None:
             raise Exception("Reader is None")
 
-        while reader.at_eof() == False:
-            read = await reader.read(1024)
-            packets = self._packet_reader.read(read)
-            for packet in packets:
-                self.packets_received.put_nowait(packet)
+        try:
+            while reader.at_eof() == False:
+                read = await reader.read(1024)
+                packets = self._packet_reader.read(read)
+                for packet in packets:
+                    self.packets_received.put_nowait(packet)
+        except Exception as e:
+            _LOGGER.error(f"Exception in reader task: {e}")
 
-    # TODO: Do we need to lock?
+        # If we've finished reading for some reason, we should disconnect
+        # Clear our task first so we don't get cancelled
+        self._reader_task = None
+        await self.disconnect()
+
     async def send_packet(self, packet: DataPacket):
         """
         Send the given packet to the airtouch 5.
-        Throws if we aren't connected
+        Throws if we aren't connected or if there is a connection issue
         """
         writer = self._writer
         if writer is None:
             raise Exception("Writer is None")
 
         _LOGGER.debug(f"Sending packet {packet}")
-        writer.write(self._encoder.encode(packet))
-        await writer.drain()
+        try:
+            writer.write(self._encoder.encode(packet))
+            await writer.drain()
+        except Exception as e:
+            _LOGGER.error(f"Exception when sending packet: {e}")
+            await self.disconnect()
+            raise e

@@ -141,7 +141,7 @@ class Airtouch5SimpleClient:
             while True:
                 packet = await self._client.packets_received.get()
                 if packet is Airtouch5ConnectionStateChange.DISCONNECTED:
-                    raise Exception("Disconnected")
+                    raise Exception(f"Disconnected while waiting for a {packet_type}")
                 if isinstance(packet, DataPacket) and isinstance(
                     packet.data, packet_type
                 ):
@@ -155,16 +155,17 @@ class Airtouch5SimpleClient:
         Calls the matching callbacks.
         """
         while True:
-            # Wait for a packet, or timeout after 10 minutes
+            # Wait for a packet, or timeout after 5 minutes
             packet: DataPacket | Airtouch5ConnectionStateChange
             try:
                 packet = await asyncio.wait_for(
-                    self._client.packets_received.get(), 10 * 60
+                    self._client.packets_received.get(), 5 * 60
                 )
             except asyncio.TimeoutError:
                 _LOGGER.error("Timeout waiting for packet, reconnecting")
                 await self._client.disconnect()
-                packet = Airtouch5ConnectionStateChange.DISCONNECTED
+                # disconnect pushes a DISCONNECTED message in to the queue, so we'll reconnect
+                continue
 
             _LOGGER.debug(f"maintain Received packet {packet}")
             if packet is Airtouch5ConnectionStateChange.DISCONNECTED:
