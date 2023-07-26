@@ -2,7 +2,7 @@ import struct
 
 from airtouch5py.packet_fields import MessageType
 from airtouch5py.packets.ac_ability import AcAbilityData, AcAbilityRequestData
-from airtouch5py.packets.ac_control import AcControlData
+from airtouch5py.packets.ac_control import AcControlData, SetpointControl
 from airtouch5py.packets.ac_error_information import (
     AcErrorInformationData,
     AcErrorInformationRequestData,
@@ -203,7 +203,15 @@ class PacketEncoder:
             res += struct.pack(">B", ac.setpoint_control.value)
 
             # Byte 4 Setpoint value (Available when byte 3 is Change setpoint)
-            res += struct.pack(">B", int(ac.setpoint * 10 - 100))
+            match ac.setpoint_control:
+                case SetpointControl.CHANGE_SETPOINT:
+                    res += struct.pack(">B", int(ac.setpoint * 10 - 100))
+                case SetpointControl.KEEP_SETPOINT_VALUE | SetpointControl.INVALIDATE_DATA:
+                    res += b"\xFF"
+                case _:
+                    raise Exception(
+                        f"Unsupported setpoint control {ac.setpoint_control}"
+                    )
 
         return res
 
