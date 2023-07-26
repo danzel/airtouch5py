@@ -228,9 +228,9 @@ class PacketDecoder:
             if temperature > 150:  # temp > 150 invalid
                 temperature = None
             # Byte 7 Bit 2 Spill active
-            spill_active = bool(bits[56 + 6])
+            spill_active = bool(bits[48 + 6])
             # Byte 7 Bit 1 Is low battery
-            is_low_battery = bool(bits[56 + 7])
+            is_low_battery = bool(bits[48 + 7])
 
             zones.append(
                 ZoneStatusZone(
