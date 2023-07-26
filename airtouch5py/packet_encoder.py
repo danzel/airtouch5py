@@ -167,7 +167,6 @@ class PacketEncoder:
                 res += b"\x07\xFF"  # The sample packs this
             else:
                 res += struct.pack(">H", int(zone.temperature * 10 + 500))
-            print(f"packing {zone.temperature}")
 
             # Byte 7 Bit 8-3 NOT USED
             # Byte 7 Bit 2 Spill active

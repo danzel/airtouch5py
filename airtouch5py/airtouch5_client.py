@@ -88,11 +88,7 @@ class Airtouch5Client:
 
         while reader.at_eof() == False:
             read = await reader.read(1024)
-            print(f"read packets read {len(read)} bytes")
             packets = self._packet_reader.read(read)
-            print(
-                f"read packets found {len(packets)} packets, bytes remaining {len(self._packet_reader._buffer)}"
-            )
             for packet in packets:
                 self.packets_received.put_nowait(packet)
 
