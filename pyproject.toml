@@ -6,7 +6,7 @@ authors = ["Dave Leaver <danzel@localhost.geek.nz>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 bitarray = "^2.8.0"
 crc = "^4.3.0"
 
