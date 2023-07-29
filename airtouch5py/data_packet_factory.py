@@ -19,35 +19,35 @@ class DataPacketFactory:
         self._id = 0x01
 
     def zone_control(self, zones: list[ZoneControlZone]) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(ADDRESS, self._id, ZoneControlData(zones))
 
     def zone_status_request(self) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(ADDRESS, self._id, ZoneStatusData([]))
 
     def ac_control(self, ac: list[AcControl]) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(ADDRESS, self._id, AcControlData(ac))
 
     def ac_status_request(self) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(ADDRESS, self._id, AcStatusData([]))
 
     def ac_ability_request(self, ac_number: int | None = None) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(EXTENDED_ADDRESS, self._id, AcAbilityRequestData(ac_number))
 
     def ac_error_information_request(self, ac_number: int) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(
             EXTENDED_ADDRESS, self._id, AcErrorInformationRequestData(ac_number)
         )
 
     def zone_name_request(self, zone_number: int | None = None) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(EXTENDED_ADDRESS, self._id, ZoneNameRequestData(zone_number))
 
     def console_version_request(self) -> DataPacket:
-        self._id = self._id + 1 % 256
+        self._id = (self._id + 1) % 256
         return DataPacket(EXTENDED_ADDRESS, self._id, ConsoleVersionRequestData())
