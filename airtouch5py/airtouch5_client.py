@@ -1,4 +1,5 @@
 import asyncio
+import binascii
 import logging
 from enum import Enum
 
@@ -113,6 +114,7 @@ class Airtouch5Client:
         try:
             while reader.at_eof() == False:
                 read = await reader.read(1024)
+                _LOGGER.debug(f"Received data: {binascii.hexlify(read)}")
                 packets = self._packet_reader.read(read)
                 for packet in packets:
                     self.packets_received.put_nowait(packet)
@@ -133,9 +135,10 @@ class Airtouch5Client:
         if writer is None:
             raise Exception("Writer is None")
 
-        _LOGGER.debug(f"Sending packet {packet}")
         try:
-            writer.write(self._encoder.encode(packet))
+            data = self._encoder.encode(packet)
+            _LOGGER.debug(f"Sending data: {binascii.hexlify(data)}")
+            writer.write(data)
             await writer.drain()
         except Exception as e:
             _LOGGER.error(f"Exception when sending packet: {e}")
