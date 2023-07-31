@@ -154,20 +154,43 @@ class Airtouch5SimpleClient:
         Read messages off the queue, reconnecting if we disconnect.
         Calls the matching callbacks.
         """
+
+        # AirTouch5 doesn't send any packets if nothing is changing.
+        # So we periodically send a packet to test if the connection is alive.
+        have_sent_keep_alive_packet = False
+
         while True:
-            # Wait for a packet, or timeout after 5 minutes
+            # Wait for a packet, send one after 4 minutes, or timeout after 4+1 minutes
             packet: DataPacket | Airtouch5ConnectionStateChange
             try:
                 packet = await asyncio.wait_for(
-                    self._client.packets_received.get(), 5 * 60
+                    self._client.packets_received.get(),
+                    1 * 60 if have_sent_keep_alive_packet else 4 * 60,
                 )
             except asyncio.TimeoutError:
-                _LOGGER.error("Timeout waiting for packet, reconnecting")
-                await self._client.disconnect()
-                # disconnect pushes a DISCONNECTED message in to the queue, so we'll reconnect
-                continue
+                if not have_sent_keep_alive_packet:
+                    # send something to test the connection
+                    try:
+                        await self._client.send_packet(
+                            self.data_packet_factory.console_version_request()
+                        )
+                        have_sent_keep_alive_packet = True
+                    except:
+                        # Ignore, send_packet will disconnect if it fails
+                        _LOGGER.info(
+                            "Failed to send keep alive packet, connection must be dead"
+                        )
+                    continue
+                else:
+                    _LOGGER.error("Timeout waiting for packet, reconnecting")
+                    await self._client.disconnect()
+                    have_sent_keep_alive_packet = False
+                    # disconnect pushes a DISCONNECTED message in to the queue, so we'll reconnect
+                    continue
 
             _LOGGER.debug(f"maintain Received packet {packet}")
+            have_sent_keep_alive_packet = False
+
             if packet is Airtouch5ConnectionStateChange.DISCONNECTED:
                 [cb(packet) for cb in self.connection_state_callbacks]
                 _LOGGER.warning("Disconnected from Airtouch 5, reconnecting")
