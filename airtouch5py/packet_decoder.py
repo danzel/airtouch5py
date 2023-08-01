@@ -396,7 +396,7 @@ class PacketDecoder:
             # Byte 4 Following data length
             length = struct.unpack(">B", bytes[1:2])[0]
             # Byte 5-20 AC Name (Null terminated if nulls fit)
-            name = bytes[2:18].decode("ascii").split("\x00")[0]
+            name = bytes[2:18].decode(errors="ignore").split("\x00")[0]
             # Byte 21 start zone number
             start_zone_number = struct.unpack(">B", bytes[18:19])[0]
             # Byte 22 zone count
@@ -480,7 +480,7 @@ class PacketDecoder:
         # Byte 4 error info length
         error_length = struct.unpack(">B", bytes[1:2])[0]
         # Byte 5-error_length error info
-        error_info = bytes[2 : 2 + error_length].decode("ascii")
+        error_info = bytes[2 : 2 + error_length].decode(errors="ignore")
         return AcErrorInformationData(ac_number, error_info)
 
     def decode_zone_name(self, bytes: bytes) -> Data:
@@ -497,7 +497,7 @@ class PacketDecoder:
             # Byte 4 Name  length
             length = struct.unpack(">B", bytes[1:2])[0]
             # Byte 5..n Zone Name
-            name = bytes[2 : 2 + length].decode("ascii")
+            name = bytes[2 : 2 + length].decode(errors="ignore")
 
             names.append(ZoneName(zone_number, name))
             # We've now used the first 2 + length bytes, so remove them from the buffer
@@ -514,6 +514,6 @@ class PacketDecoder:
         # Byte 4 version string length
         length = struct.unpack(">B", bytes[1:2])[0]
         # Byte 5..n Version string
-        version = bytes[2 : 2 + length].decode("ascii")
+        version = bytes[2 : 2 + length].decode(errors="ignore")
 
         return ConsoleVersionData(has_update, version)

@@ -456,6 +456,18 @@ def test_decode_zone_names_response_multiple_example():
     assert z.zone_name == "Bedroom"
 
 
+def test_decode_zone_names_response_zone_name_is_utf8():
+    decoder = PacketDecoder()
+    data = b"\x55\x55\x55\xaa\xb0\x90\x03\x1f\x00\x3c\xff\x13\x00\x06\x4d\x61\x73\x74\x65\x72\x01\x0a\x43\x61\x6d\xe2\x80\x99\x73\x20\x72\x6f\x02\x06\x52\x75\x6d\x70\x75\x73\x03\x0c\x44\x72\x61\x67\x6f\x6e\x73\x20\x6c\x61\x69\x72\x04\x06\x44\x69\x6e\x69\x6e\x67\x05\x06\x4c\x6f\x75\x6e\x67\x65\xc9\x19"
+    packet: DataPacket = decoder.decode(data)
+
+    assert type(packet.data) is ZoneNameData
+
+    assert len(packet.data.zone_names) == 6
+    # The single quote here is a special character that doesn't encode to a single byte
+    assert packet.data.zone_names[1].zone_name == "Cam’s ro"
+
+
 def test_decode_console_version_request_example():
     """
     Decode the console version (request) message as given in the protocol documentation.
