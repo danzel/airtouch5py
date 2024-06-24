@@ -4,6 +4,9 @@ version = "0.2.8"
 description = ""
 authors = ["Dave Leaver <danzel@localhost.geek.nz>"]
 readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
