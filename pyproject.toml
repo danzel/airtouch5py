@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "airtouch5py"
-version = "0.2.9"
+version = "0.2.10"
 description = ""
 authors = ["Dave Leaver <danzel@localhost.geek.nz>"]
 readme = "README.md"
