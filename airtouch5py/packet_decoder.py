@@ -131,15 +131,14 @@ class PacketDecoder:
                     raise ValueError(
                         "Zone control message should have 4 byte repeat data"
                     )
-                return self.decode_zone_control(bytes[8:], repeat_data_count)
+                return self.decode_zone_control(bytes[8 + normal_data_length:], repeat_data_count)
             case ControlStatusSubType.ZONE_STATUS.value:
-                if normal_data_length != 0:
-                    raise ValueError("Zone status message should not have normal data")
-                if repeat_data_count != 0 and repeat_data_length != 8:
+                #This packet doesn't currently have normal data (1.2.0), but the docs say it might in the future
+                if repeat_data_count != 0 and repeat_data_length < 8:
                     raise ValueError(
-                        "Zone status message should have 8 byte repeat data"
+                        "Zone status message should have at least 8 byte repeat data"
                     )
-                return self.decode_zone_status(bytes[8:], repeat_data_count)
+                return self.decode_zone_status(bytes[8 + normal_data_length:], repeat_data_count, repeat_data_length)
             case ControlStatusSubType.AC_CONTROL.value:
                 if normal_data_length != 0:
                     raise ValueError("AC control message should not have normal data")
@@ -147,20 +146,15 @@ class PacketDecoder:
                     raise ValueError(
                         "AC control message should have 4 byte repeat data"
                     )
-                return self.decode_ac_control(bytes[8:], repeat_data_count)
+                return self.decode_ac_control(bytes[8 + normal_data_length:], repeat_data_count)
             case ControlStatusSubType.AC_STATUS.value:
-                if normal_data_length != 0:
-                    raise ValueError("AC status message should not have normal data")
-                if (
-                    repeat_data_count != 0
-                    and repeat_data_length != 10
-                    and repeat_data_length != 14
-                ):
+                #This packet doesn't currently have normal data (1.2.0), but the docs say it might in the future
+                if repeat_data_count != 0 and repeat_data_length < 10:
                     raise ValueError(
-                        f"AC status message should have 10 or 14 byte repeat data, but it was {repeat_data_length}"
+                        f"AC status message should have at least 10 or 14 byte repeat data, but it was {repeat_data_length}"
                     )
                 return self.decode_ac_status(
-                    bytes[8:], repeat_data_count, repeat_data_length
+                    bytes[8 + normal_data_length:], repeat_data_count, repeat_data_length
                 )
             case _:
                 raise ValueError(f"Unknown sub message type: {hex(sub_message_type)}")
@@ -202,7 +196,7 @@ class PacketDecoder:
         return ZoneControlData(zones)
 
     def decode_zone_status(
-        self, bytes: bytes, repeat_data_count: int
+        self, bytes: bytes, repeat_data_count: int, repeat_data_length: int
     ) -> ZoneStatusData:
         if repeat_data_count == 0:
             return ZoneStatusData([])
@@ -212,7 +206,7 @@ class PacketDecoder:
 
         for i in range(0, repeat_data_count):
             bits.clear()
-            bits.frombytes(bytes[i * 8 : i * 8 + 8])
+            bits.frombytes(bytes[i * repeat_data_length : i * repeat_data_length + repeat_data_length])
             # Byte 1 Bit 8-7 Zone power state
             zone_power_state = ZonePowerState(ba2int(bits[0:2]))
             # Byte 1 Bit 6-1 Zone number
@@ -229,9 +223,11 @@ class PacketDecoder:
                 set_point = (set_point + 100) / 10
             # Byte 4 Bit 8 Has sensor
             has_sensor = bool(bits[24 + 0])
-            # Byte 5-6 Temperature
-            temperature = (ba2int(bits[32 : 32 + 16]) - 500) / 10
-            if temperature > 150:  # temp > 150 invalid
+            # Byte 5 Bit 3-1, Byte 6 Temperature
+            temperature = ba2int(bits[32 + 5 : 32 + 5 + 3 + 8])
+            if temperature <= 2000:
+                temperature = (temperature - 500) / 10
+            else:  # Other: Not available
                 temperature = None
             # Byte 7 Bit 2 Spill active
             spill_active = bool(bits[48 + 6])
@@ -347,8 +343,8 @@ class PacketDecoder:
             spill_active = bool(bits[24 + 6])
             # Byte 4 Bit 1 Timer set
             timer_set = bool(bits[24 + 7])
-            # Byte 5-6 Temperature
-            temperature = ba2int(bits[32 : 32 + 16])
+            # Byte 5 Bit 3-1, Byte 6 Temperature
+            temperature = ba2int(bits[32 + 5 : 32 + 5 + 3 + 8])
             if temperature <= 2000:
                 temperature = (temperature - 500) / 10
             else:  # Other: Not available

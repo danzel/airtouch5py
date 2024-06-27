@@ -257,6 +257,41 @@ def test_decode_ac_status_response_2_acs_example():
     assert ac.temperature == 24.0
     assert ac.error_code == 0  # No error
 
+def test_decode_ac_status_response_console_120():
+    """
+    Decode the AC status (response) message as received with console version 1.2.0 (2024-06-27 release).
+
+    The repeated section is 14 bytes instead of 10 as it used to be
+    """
+    decoder = PacketDecoder()
+    data = b"\x55\x55\x55\xaa\xb0\x80\x07\xc0\x00\x16\x23\x00\x00\x00\x00\x0e\x00\x01\x10\x12\x82\xc5\x0a\xbf\x00\x00\xe5\x00\xe2\xe4\x00\x00\xa7\xd5"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+
+    assert packet.address == 0xB080
+    assert packet.message_id == 0x07
+    assert type(packet.data) is AcStatusData
+
+    # AC status
+
+    assert len(packet.data.ac_status) == 1
+
+    # AC 0
+
+    ac = packet.data.ac_status[0]
+    assert ac.ac_power_state == AcPowerState.ON
+    assert ac.ac_number == 0
+    assert ac.ac_mode == AcMode.HEAT
+    assert ac.ac_fan_speed == AcFanSpeed.LOW
+    assert ac.ac_setpoint == 23.0
+    assert ac.turbo_active == False
+    assert ac.bypass_active == True
+    assert ac.spill_active == False
+    assert ac.timer_set == True
+    assert ac.temperature == 20.3
+    assert ac.error_code == 0  # No error
+
 
 def test_decode_extended_ac_ability_request_example():
     """
