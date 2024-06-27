@@ -151,11 +151,17 @@ class PacketDecoder:
             case ControlStatusSubType.AC_STATUS.value:
                 if normal_data_length != 0:
                     raise ValueError("AC status message should not have normal data")
-                if repeat_data_count != 0 and repeat_data_length != 10:
+                if (
+                    repeat_data_count != 0
+                    and repeat_data_length != 10
+                    and repeat_data_length != 14
+                ):
                     raise ValueError(
-                        "AC status message should have 10 byte repeat data"
+                        f"AC status message should have 10 or 14 byte repeat data, but it was {repeat_data_length}"
                     )
-                return self.decode_ac_status(bytes[8:], repeat_data_count)
+                return self.decode_ac_status(
+                    bytes[8:], repeat_data_count, repeat_data_length
+                )
             case _:
                 raise ValueError(f"Unknown sub message type: {hex(sub_message_type)}")
 
@@ -293,19 +299,23 @@ class PacketDecoder:
                     setpoint,
                 )
             )
-
         return AcControlData(ac_control)
 
-    def decode_ac_status(self, bytes: bytes, repeat_data_count: int) -> AcStatusData:
+    def decode_ac_status(
+        self, bytes: bytes, repeat_data_count: int, repeat_data_length: int
+    ) -> AcStatusData:
         if repeat_data_count == 0:
             return AcStatusData([])
-
         ac_status: list[AcStatus] = []
         bits = bitarray(endian="big")
 
         for i in range(0, repeat_data_count):
             bits.clear()
-            bits.frombytes(bytes[i * 10 : i * 10 + 10])
+            bits.frombytes(
+                bytes[
+                    i * repeat_data_length : i * repeat_data_length + repeat_data_length
+                ]
+            )
 
             # Byte 1 Bit 8-5 AC power state
             ac_power_state = ba2int(bits[0:4])
@@ -345,6 +355,9 @@ class PacketDecoder:
                 temperature = None
             # Byte 7-8 Error code
             error_code = ba2int(bits[48 : 48 + 16])
+
+            # Byte 9 NOT USED (in 1.1 docs)
+            # Byte 10,11,12,13 ?????? Not in 1.1 docs, introduced in console 1.2.0
 
             ac_status.append(
                 AcStatus(
