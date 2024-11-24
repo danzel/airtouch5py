@@ -535,3 +535,12 @@ def test_console_version_response_example():
     # Console version
     assert packet.data.has_update == False
     assert packet.data.version == "1.0.3,1.0.3"
+
+
+def test_invalid_message_type():
+    decoder = PacketDecoder()
+    data = b"\x55\x55\x55\xab\x00\x00\x00\x0e\x00\x0e\x55\x55\x55\xaa\xb0\x90\x03\x1f\x00\x02\xff\x13\x7a\xef"
+    packet: DataPacket = decoder.decode(data)
+
+    # Message type is 0x0E, which is invalid, docs say to ignore it, which means we return None as data
+    assert packet.data is None

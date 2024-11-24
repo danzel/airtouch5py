@@ -98,7 +98,8 @@ class PacketDecoder:
             case MessageType.EXTENDED.value:
                 data = self.decode_extended(data_bytes)
             case _:
-                raise ValueError(f"Unknown message type: {hex(message_type)}")
+                # Docs say: Ignore any other received types.
+                data = None
 
         return DataPacket(address, message_id, data)
 
