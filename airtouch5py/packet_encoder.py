@@ -18,9 +18,18 @@ from airtouch5py.packets.zone_name import ZoneNameData, ZoneNameRequestData
 
 from airtouch5py.packets.zone_status import ZoneStatusData
 
-from crc import Calculator, Crc16
+from crc import Calculator, Configuration
 
-_calculator = Calculator(Crc16.MODBUS)  # type: ignore
+_calculator = Calculator(
+    Configuration(
+        width=16,
+        polynomial=0x8005,
+        init_value=0xFFFF,
+        final_xor_value=0x0000,
+        reverse_input=True,
+        reverse_output=True,
+    )
+)
 
 
 class PacketEncoder:

@@ -207,14 +207,14 @@ files = [
 
 [[package]]
 name = "crc"
-version = "4.3.0"
-description = "Library and CLI to calculate and verify all kinds of CRC checksums"
+version = "7.1.0"
+description = "Pure Python CRC library"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "crc-4.3.0-py3-none-any.whl", hash = "sha256:d9604ed4322631fb7043e30ed9d378422f88f89b4cf85063e7380a0e8b32abb2"},
-    {file = "crc-4.3.0.tar.gz", hash = "sha256:02be8a4e1b8aaa7f8685f05699b577286983aee2394e223d7aa894825954a8c6"},
+    {file = "crc-7.1.0-py3-none-any.whl", hash = "sha256:b9845c81d0b900d8fda1aae7af977035bee0359c279713814e9fd23a2d59db6a"},
+    {file = "crc-7.1.0.tar.gz", hash = "sha256:99dd540909a37ae4f62c65441df8ecb4e7f9af014fecaf4f331052a41d66c07d"},
 ]
 
 [[package]]
@@ -595,4 +595,4 @@ trailrunner = ">=1.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "1e7c1cb8035fadec463ab740f178a9fde2dd15f6d7bff463cb7a297c5ca94a3c"
+content-hash = "9530e67fa9d867a76f03745807412ccf27cfcdf8f04a8a60b28d591e207d7ff6"
