@@ -1,6 +1,6 @@
 [project]
 name = "airtouch5py"
-version = "0.2.11"
+version = "0.3.0"
 description = ""
 requires-python = ">=3.10,<4.0"
 authors = [
