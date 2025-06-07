@@ -2,7 +2,7 @@
 name = "airtouch5py"
 version = "0.2.11"
 description = ""
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4.0"
 authors = [
     {name = "Dave Leaver", email = "danzel@localhost.geek.nz"}
 ]
@@ -11,7 +11,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
 ]
 
-[poetry.dependencies]
+[tool.poetry.dependencies]
 python = "^3.10"
 bitarray = "^3.4.2"
 crc = "^7.1.0"
@@ -19,7 +19,6 @@ crc = "^7.1.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.0"
 ufmt = "^2.8.0"
-
 
 [build-system]
 requires = ["poetry-core"]
