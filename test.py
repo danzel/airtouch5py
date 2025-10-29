@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import sys
+import socket
+
 from pprint import pprint
 
 from airtouch5py.airtouch5_client import Airtouch5Client, Airtouch5ConnectionStateChange
@@ -13,6 +15,7 @@ from airtouch5py.packets.datapacket import DataPacket
 from airtouch5py.packets.zone_control import ZoneControlData
 from airtouch5py.packets.zone_name import ZoneNameData
 from airtouch5py.packets.zone_status import ZoneStatusData
+from airtouch5py.discovery import AirtouchDiscovery
 
 
 def print_packet(packet: DataPacket):
@@ -53,38 +56,51 @@ def print_packet(packet: DataPacket):
 
 async def main(ip: str):
     logger = logging.getLogger("airtouch5pytest")
-    client = Airtouch5SimpleClient(ip)
 
-    print("Testing connection")
-    try:
-        await client.test_connection()
-        print("Succeeded")
-    except Exception as e:
-        print(f"Failed: {e}")
-        return
+    print(f"Discovering devices via broadcast on {ip}...")
+    discovery_instance = AirtouchDiscovery()
+    devices = await discovery_instance.discover_airtouch_devices_broadcast(ip)
 
-    print("Connecting...")
-    try:
-        await client.connect_and_stay_connected()
-    except Exception as e:
-        print(f"Failed: {e}")
-        return
-    print(f"Connected, we have {len(client.zones)} zones and {len(client.ac)} acs")
-    print(f"Initial ac status {client.latest_ac_status}")
-    print(f"Initial zone status {client.latest_zone_status}")
+    print(f"Discovered devices: {devices}")
 
-    client.connection_state_callbacks.append(
-        lambda x: print(f"Connection state changed to {x}")
-    )
-    client.data_packet_callbacks.append(print_packet)
+    for device in devices:
+        client = Airtouch5SimpleClient(device)
+        print(f"Testing TCP Connection: {device}")
 
-    client.zone_status_callbacks.append(lambda x: print(f"Zone status changed {x}"))
+        try:
+            await client.test_connection()
+            print("Succeeded")
+        except Exception as e:
+            print(f"Failed: {e}")
+            return
 
-    # await client.send_packet(client.data_packet_factory.zone_status_request())
-    # await client.send_packet(client.data_packet_factory.ac_status_request())
+        print("Connecting...")
+        try:
+            await client.connect_and_stay_connected()
+        except Exception as e:
+            print(f"Failed: {e}")
+            return
+        print(f"Connected, we have {len(client.zones)} zones and {len(client.ac)} acs")
+        print(f"Initial ac status {client.latest_ac_status}")
+        print(f"Initial zone status {client.latest_zone_status}")
 
-    await asyncio.sleep(999)
+        client.connection_state_callbacks.append(
+            lambda x: print(f"Connection state changed to {x}")
+        )
+        client.data_packet_callbacks.append(print_packet)
 
+        client.zone_status_callbacks.append(lambda x: print(f"Zone status changed {x}"))
+
+        # await client.send_packet(client.data_packet_factory.zone_status_request())
+        # await client.send_packet(client.data_packet_factory.ac_status_request())
+
+        await asyncio.sleep(999)
+
+
+async def sendDiscoveryRequest(ip: str):
+    AirtouchDiscovery_instance = AirtouchDiscovery()
+    responses = await AirtouchDiscovery_instance.discover_airtouch_devices_broadcast(ip)
+    print(responses)
 
 if __name__ == "__main__":
     asyncio.run(main(sys.argv[1]))

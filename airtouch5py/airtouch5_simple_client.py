@@ -10,6 +10,7 @@ from airtouch5py.packets.console_version import ConsoleVersionData
 from airtouch5py.packets.datapacket import Data, DataPacket
 from airtouch5py.packets.zone_name import ZoneName, ZoneNameData
 from airtouch5py.packets.zone_status import ZoneStatusData, ZoneStatusZone
+from airtouch5py.discovery import AirtouchDevice
 
 _LOGGER = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -46,9 +47,21 @@ class Airtouch5SimpleClient:
     _client: Airtouch5Client
     _connection_task: asyncio.Task[None] | None
 
-    def __init__(self, ip: str):
-        self.ip = ip
-        self._client = Airtouch5Client(ip)
+    def __init__(self, ip_or_device):
+
+        if isinstance(ip_or_device, AirtouchDevice):
+            self.device = ip_or_device
+            self.ip = ip_or_device.ip
+
+        # If an IP address string was provided
+        elif isinstance(ip_or_device, str):
+            self.ip = ip_or_device
+            self.device = None
+        else:
+            raise TypeError(
+                f"Expected str or AirtouchDevice, got {type(ip_or_device).__name__}"
+            )
+        self._client = Airtouch5Client(self.ip)
         self.data_packet_factory = DataPacketFactory()
 
         self.ac = []
