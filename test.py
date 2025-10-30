@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import sys
-import socket
 
 from pprint import pprint
 
@@ -66,7 +65,6 @@ async def main(ip: str):
     for device in devices:
         client = Airtouch5SimpleClient(device)
         print(f"Testing TCP Connection: {device}")
-
         try:
             await client.test_connection()
             print("Succeeded")
@@ -94,7 +92,7 @@ async def main(ip: str):
         # await client.send_packet(client.data_packet_factory.zone_status_request())
         # await client.send_packet(client.data_packet_factory.ac_status_request())
 
-        await asyncio.sleep(999)
+    await asyncio.sleep(20)
 
 
 async def sendDiscoveryRequest(ip: str):
