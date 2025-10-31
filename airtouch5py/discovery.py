@@ -94,16 +94,14 @@ class AirtouchDiscovery:
 
 
     async def discover(self, ip="255.255.255.255") -> list[AirtouchDevice]:
-        try:
-            # Broadcast discovery packet
-            message = self.DISCOVERY_MESSAGE.encode('utf-8')
-            self.transport.sendto(message, (ip, self.DISCOVERY_PORT))
-            _LOGGER.info(f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}")
 
-            # Wait for TIMEOUT seconds to gather responses
-            await asyncio.sleep(self.TIMEOUT)
-        finally:
-            self.transport.close()
+        # Broadcast discovery packet
+        message = self.DISCOVERY_MESSAGE.encode('utf-8')
+        self.transport.sendto(message, (ip, self.DISCOVERY_PORT))
+        _LOGGER.info(f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}")
+
+        # Wait for TIMEOUT seconds to gather responses
+        await asyncio.sleep(self.TIMEOUT)
 
         return self.responses
 
