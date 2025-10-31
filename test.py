@@ -57,8 +57,7 @@ async def main(ip: str):
     logger = logging.getLogger("airtouch5pytest")
 
     print(f"Discovering devices via broadcast on {ip}...")
-    discovery_instance = AirtouchDiscovery()
-    devices = await discovery_instance.discover_airtouch_devices_broadcast(ip)
+    devices = await sendDiscoveryRequest(ip)
 
     print(f"Discovered devices: {devices}")
 
@@ -97,8 +96,10 @@ async def main(ip: str):
 
 async def sendDiscoveryRequest(ip: str):
     AirtouchDiscovery_instance = AirtouchDiscovery()
-    responses = await AirtouchDiscovery_instance.discover_airtouch_devices_broadcast(ip)
+    await AirtouchDiscovery_instance.establish_server()
+    responses = await AirtouchDiscovery_instance.discover(ip)
     print(responses)
+    return responses
 
 if __name__ == "__main__":
     asyncio.run(main(sys.argv[1]))
