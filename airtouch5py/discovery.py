@@ -61,13 +61,19 @@ class AirtouchDiscovery:
 
     async def establish_server(self):
        # Create UDP socket
-
-          transport, protocol = await self.loop.create_datagram_endpoint(
+        transport, protocol = await self.loop.create_datagram_endpoint(
             lambda: AirtouchDiscoveryProtocol(self.my_ips, self.parse_airtouch_response),
             local_addr=("0.0.0.0", self.DISCOVERY_PORT),
             allow_broadcast=True
         )
-          self.transport = transport
+        self.transport = transport
+
+    async def close(self):
+        """Cleanly close the UDP socket."""
+        if self.transport:
+            _LOGGER.debug("Closing AirtouchDiscovery UDP listener")
+            self.transport.close()
+            self.transport = None
 
     def parse_airtouch_response(self, raw_response: bytes) -> AirtouchDevice | None:
         """
