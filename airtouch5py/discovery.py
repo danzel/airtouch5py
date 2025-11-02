@@ -49,22 +49,26 @@ class AirtouchDiscovery:
     DISCOVERY_PORT = 49005
     DISCOVERY_MESSAGE = "::REQUEST-POLYAIRE-AIRTOUCH-DEVICE-INFO:;"
     TIMEOUT = 3  # seconds
-    responses: list[AirtouchDevice]
-    loop: asyncio.AbstractEventLoop
-    my_ips: list[str]
-    transport: asyncio.DatagramTransport
 
     def __init__(self):
-        self.responses = []
-        self.loop = asyncio.get_event_loop()
+        self.responses: list[AirtouchDevice] = []
+        self.loop = asyncio.get_running_loop()
         self.my_ips = self._get_local_ips()
+        self.transport: asyncio.DatagramTransport | None = None
+
+    async def _ensure_server(self):
+        """Make sure transport is ready before sending packets."""
+        if self.transport is None:
+            await self.establish_server()
+        self.responses = []  # reset every discovery attempt
 
     async def establish_server(self):
        # Create UDP socket
         transport, protocol = await self.loop.create_datagram_endpoint(
             lambda: AirtouchDiscoveryProtocol(self.my_ips, self.parse_airtouch_response),
             local_addr=("0.0.0.0", self.DISCOVERY_PORT),
-            allow_broadcast=True
+            allow_broadcast=True,
+            reuse_port=True,  # ✅ allow multiple listeners (important for HA)
         )
         self.transport = transport
 
@@ -92,18 +96,27 @@ class AirtouchDiscovery:
             _LOGGER.error(f"❌ Failed to parse response: {e}")
             return None
 
+    async def discover_by_ip(self, ip: str) -> AirtouchDevice | None:
+        await self._ensure_server()
 
-    async def discover(self, ip="255.255.255.255") -> list[AirtouchDevice]:
-
-        # Broadcast discovery packet
         message = self.DISCOVERY_MESSAGE.encode('utf-8')
         self.transport.sendto(message, (ip, self.DISCOVERY_PORT))
         _LOGGER.info(f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}")
-
-        # Wait for TIMEOUT seconds to gather responses
         await asyncio.sleep(self.TIMEOUT)
+        return self.responses[0] if self.responses else None
 
-        return self.responses
+
+
+    async def discover(self, ip="255.255.255.255") -> list[AirtouchDevice]:
+        await self._ensure_server()
+
+        message = self.DISCOVERY_MESSAGE.encode("utf-8")
+        self.transport.sendto(message, (ip, self.DISCOVERY_PORT))
+        _LOGGER.info(f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}")
+
+
+        await asyncio.sleep(self.TIMEOUT)
+        return list(self.responses)
 
     def _get_local_ips(self):
         """Return a list of this machine's IP addresses."""
