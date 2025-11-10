@@ -24,18 +24,11 @@ class AirtouchDevice:
 class AirtouchDiscoveryProtocol(asyncio.DatagramProtocol):
     """Async listener for Airtouch UDP discovery packets."""
 
-    def __init__(self, my_ips, parse_func):
-        self.my_ips = my_ips
+    def __init__(self, parse_func):
         self.parse_func = parse_func
 
     def datagram_received(self, data, addr):
-        sender_ip, _ = addr
-
-        if sender_ip in self.my_ips:
-            _LOGGER.debug(f"Ignoring self-response from {sender_ip}")
-            return
-
-        _LOGGER.info(f"✅ Received {len(data)} bytes from {addr}")
+        _LOGGER.info(f"Received {len(data)} bytes from {addr}")
         self.parse_func(data)
 
 
@@ -48,12 +41,11 @@ class AirtouchDiscoveryProtocol(asyncio.DatagramProtocol):
 class AirtouchDiscovery:
     DISCOVERY_PORT = 49005
     DISCOVERY_MESSAGE = "::REQUEST-POLYAIRE-AIRTOUCH-DEVICE-INFO:;"
-    TIMEOUT = 3  # seconds
+    TIMEOUT = 5  # seconds
 
     def __init__(self):
         self.responses: list[AirtouchDevice] = []
         self.loop = asyncio.get_running_loop()
-        self.my_ips = self._get_local_ips()
         self.transport: asyncio.DatagramTransport | None = None
 
     async def _ensure_server(self):
@@ -65,10 +57,10 @@ class AirtouchDiscovery:
     async def establish_server(self):
        # Create UDP socket
         transport, protocol = await self.loop.create_datagram_endpoint(
-            lambda: AirtouchDiscoveryProtocol(self.my_ips, self.parse_airtouch_response),
+            lambda: AirtouchDiscoveryProtocol(self.parse_airtouch_response),
             local_addr=("0.0.0.0", self.DISCOVERY_PORT),
             allow_broadcast=True,
-            reuse_port=True,  # ✅ allow multiple listeners (important for HA)
+            reuse_port=True,  # allow multiple listeners (important for HA)
         )
         self.transport = transport
 
@@ -88,12 +80,12 @@ class AirtouchDiscovery:
             decoded = raw_response.decode("utf-8").strip()
             parts = decoded.split(",")
             if len(parts) != 5:
-                _LOGGER.info(f"⚠️ Unexpected response format: {decoded}")
+                _LOGGER.info(f"Unexpected response format: {decoded}")
                 return None
 
             self.responses.append(AirtouchDevice(*parts))
         except Exception as e:
-            _LOGGER.error(f"❌ Failed to parse response: {e}")
+            _LOGGER.error(f"Failed to parse response: {e}")
             return None
 
     async def discover_by_ip(self, ip: str) -> AirtouchDevice | None:
@@ -118,14 +110,3 @@ class AirtouchDiscovery:
         await asyncio.sleep(self.TIMEOUT)
         return list(self.responses)
 
-    def _get_local_ips(self):
-        """Return a list of this machine's IP addresses."""
-        ips = []
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))  # doesn’t actually send data
-            ips.append(s.getsockname()[0])
-            s.close()
-        except Exception:
-            pass
-        return list(set(ips))  # remove duplicates
