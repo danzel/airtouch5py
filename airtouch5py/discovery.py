@@ -20,6 +20,7 @@ class AirtouchDevice:
     def __repr__(self) -> str:
         return f"AirtouchDevice(ip={self.ip}, console_id={self.console_id}, model={self.model}, system_id={self.system_id}, name={self.name})"
 
+
 class AirtouchDiscoveryProtocol(asyncio.DatagramProtocol):
     """Async listener for Airtouch UDP discovery packets."""
 
@@ -30,12 +31,12 @@ class AirtouchDiscoveryProtocol(asyncio.DatagramProtocol):
         _LOGGER.info(f"Received {len(data)} bytes from {addr}")
         self.parse_func(data)
 
-
     def error_received(self, exc):
         _LOGGER.warning(f"UDP socket error: {exc}")
 
     def connection_lost(self, exc):
         _LOGGER.info("UDP connection closed")
+
 
 class AirtouchDiscovery:
     DISCOVERY_PORT = 49005
@@ -54,7 +55,7 @@ class AirtouchDiscovery:
         self.responses = []  # reset every discovery attempt
 
     async def establish_server(self):
-       # Create UDP socket
+        # Create UDP socket
         reuse_port_supported = sys.platform != "win32"
         transport, protocol = await self.loop.create_datagram_endpoint(
             lambda: AirtouchDiscoveryProtocol(self.parse_airtouch_response),
@@ -99,8 +100,6 @@ class AirtouchDiscovery:
         await asyncio.sleep(self.TIMEOUT)
         return self.responses[0] if self.responses else None
 
-
-
     async def discover(self, ip="255.255.255.255") -> list[AirtouchDevice]:
         await self._ensure_server()
 
@@ -112,4 +111,3 @@ class AirtouchDiscovery:
 
         await asyncio.sleep(self.TIMEOUT)
         return list(self.responses)
-
