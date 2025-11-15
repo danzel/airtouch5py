@@ -7,7 +7,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Header (4) + Address (2) + Message Id (1) + Message type (1) + Data length (2) + check bytes (2)
 MINIMUM_PACKET_LENGTH = 12
-HEADER = b"\x55\x55\x55\xAA"
+HEADER = b"\x55\x55\x55\xaa"
 
 
 class PacketReader:

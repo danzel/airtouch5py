@@ -24,7 +24,7 @@ _calculator = Calculator(Crc16.MODBUS)  # type: ignore
 
 
 class PacketEncoder:
-    header = b"\x55\x55\x55\xAA"
+    header = b"\x55\x55\x55\xaa"
 
     def encode(self, packet: DataPacket) -> bytes:
         # Header is always 0x55 0x55 0x55 0xAA
@@ -52,9 +52,20 @@ class PacketEncoder:
 
     def _message_type(self, data: Data) -> MessageType:
         match data:
-            case ZoneControlData() | ZoneStatusData() | AcControlData() | AcStatusData():
+            case (
+                ZoneControlData() | ZoneStatusData() | AcControlData() | AcStatusData()
+            ):
                 return MessageType.CONTROL_STATUS
-            case AcAbilityRequestData() | AcAbilityData() | AcErrorInformationRequestData() | AcErrorInformationData() | ZoneNameRequestData() | ZoneNameData() | ConsoleVersionRequestData() | ConsoleVersionData():
+            case (
+                AcAbilityRequestData()
+                | AcAbilityData()
+                | AcErrorInformationRequestData()
+                | AcErrorInformationData()
+                | ZoneNameRequestData()
+                | ZoneNameData()
+                | ConsoleVersionRequestData()
+                | ConsoleVersionData()
+            ):
                 return MessageType.EXTENDED
             case _:
                 raise Exception(f"Unknown message type for {data.__class__.__name__}")
@@ -116,7 +127,7 @@ class PacketEncoder:
             elif zone.zone_setting_value == ZoneSettingValue.SET_TARGET_SETPOINT:
                 res += struct.pack(">B", int(zone.value_to_set * 10 - 100))
             elif zone.zone_setting_value == ZoneSettingValue.KEEP_SETTING_VALUE:
-                res += b"\xFF"
+                res += b"\xff"
             else:
                 raise Exception(f"Unknown zone setting value {zone.zone_setting_value}")
 
@@ -154,7 +165,7 @@ class PacketEncoder:
 
             # Byte 3 Set point setpoint=(value+100)/10, 0xFF invalid (None)
             if zone.set_point is None:
-                res += b"\xFF"
+                res += b"\xff"
             else:
                 res += struct.pack(">B", int(zone.set_point * 10 - 100))
 
@@ -164,7 +175,7 @@ class PacketEncoder:
 
             # Byte 5-6 Temperature Temperature > 150 invalid (None)
             if zone.temperature is None:
-                res += b"\x07\xFF"  # The sample packs this
+                res += b"\x07\xff"  # The sample packs this
             else:
                 res += struct.pack(">H", int(zone.temperature * 10 + 500))
 
@@ -206,8 +217,11 @@ class PacketEncoder:
             match ac.setpoint_control:
                 case SetpointControl.CHANGE_SETPOINT:
                     res += struct.pack(">B", int(ac.setpoint * 10 - 100))
-                case SetpointControl.KEEP_SETPOINT_VALUE | SetpointControl.INVALIDATE_DATA:
-                    res += b"\xFF"
+                case (
+                    SetpointControl.KEEP_SETPOINT_VALUE
+                    | SetpointControl.INVALIDATE_DATA
+                ):
+                    res += b"\xff"
                 case _:
                     raise Exception(
                         f"Unsupported setpoint control {ac.setpoint_control}"
@@ -224,7 +238,7 @@ class PacketEncoder:
         if len(data.ac_status) == 0:
             res += b"\x00"
         else:
-            res += b"\x0A"
+            res += b"\x0a"
         # repeat count (2 bytes)
         res += struct.pack(">H", len(data.ac_status))
 
@@ -240,7 +254,7 @@ class PacketEncoder:
 
             # Byte 3 Setpoint (0xFF if Not Available)
             if ac.ac_setpoint is None:
-                res += b"\xFF"
+                res += b"\xff"
             else:
                 res += struct.pack(">B", int(ac.ac_setpoint * 10 - 100))
 
@@ -260,7 +274,7 @@ class PacketEncoder:
 
             # Byte 5-6 Temperature (0x07FF if Not Available)
             if ac.temperature is None:
-                res += b"\x07\xFF"
+                res += b"\x07\xff"
             else:
                 res += struct.pack(">H", int(ac.temperature * 10 + 500))
 
@@ -274,7 +288,7 @@ class PacketEncoder:
 
     def _encode_ac_ability_request_data(self, data: AcAbilityRequestData) -> bytes:
         # Sub message type 0xFF11
-        res = b"\xFF\x11"
+        res = b"\xff\x11"
 
         if data.ac_number is not None:
             res += struct.pack(">B", data.ac_number)
@@ -283,7 +297,7 @@ class PacketEncoder:
 
     def _encode_ac_ability_data(self, data: AcAbilityData) -> bytes:
         # Sub message type 0xFF11
-        res = b"\xFF\x11"
+        res = b"\xff\x11"
 
         # Pack each ac
         for ac in data.ac_ability:
@@ -354,7 +368,7 @@ class PacketEncoder:
         self, data: AcErrorInformationRequestData
     ) -> bytes:
         # Sub message type 0xFF10
-        res = b"\xFF\x10"
+        res = b"\xff\x10"
 
         if data.ac_number is not None:
             res += struct.pack(">B", data.ac_number)
@@ -363,7 +377,7 @@ class PacketEncoder:
 
     def _encode_ac_error_information_data(self, data: AcErrorInformationData) -> bytes:
         # Sub message type 0xFF10
-        res = b"\xFF\x10"
+        res = b"\xff\x10"
 
         # Byte 3 AC number
         res += struct.pack(">B", data.ac_number)
@@ -376,7 +390,7 @@ class PacketEncoder:
 
     def _encode_zone_name_request_data(self, data: ZoneNameRequestData) -> bytes:
         # Sub message type 0xFF13
-        res = b"\xFF\x13"
+        res = b"\xff\x13"
 
         if data.zone_number is not None:
             res += struct.pack(">B", data.zone_number)
@@ -385,7 +399,7 @@ class PacketEncoder:
 
     def _encode_zone_name_data(self, data: ZoneNameData) -> bytes:
         # Sub message type 0xFF13
-        res = b"\xFF\x13"
+        res = b"\xff\x13"
 
         # Pack each zone
         for zone in data.zone_names:
@@ -404,13 +418,13 @@ class PacketEncoder:
         self, data: ConsoleVersionRequestData
     ) -> bytes:
         # Sub message type 0xFF30
-        res = b"\xFF\x30"
+        res = b"\xff\x30"
 
         return res
 
     def _encode_console_version_data(self, data: ConsoleVersionData) -> bytes:
         # Sub message type 0xFF30
-        res = b"\xFF\x30"
+        res = b"\xff\x30"
 
         # Byte 3 Update sign (0 - latest, Other - new version available)
         res += struct.pack(">B", data.has_update)

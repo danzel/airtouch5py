@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run test.py with args",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/test.py",
+            "args": ["192.168.1.255"],  // Set your broadcast address here
+            "console": "integratedTerminal"
+        }
+    ]
+}

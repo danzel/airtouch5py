@@ -132,14 +132,20 @@ class PacketDecoder:
                     raise ValueError(
                         "Zone control message should have 4 byte repeat data"
                     )
-                return self.decode_zone_control(bytes[8 + normal_data_length:], repeat_data_count)
+                return self.decode_zone_control(
+                    bytes[8 + normal_data_length :], repeat_data_count
+                )
             case ControlStatusSubType.ZONE_STATUS.value:
-                #This packet doesn't currently have normal data (1.2.0), but the docs say it might in the future
+                # This packet doesn't currently have normal data (1.2.0), but the docs say it might in the future
                 if repeat_data_count != 0 and repeat_data_length < 8:
                     raise ValueError(
                         "Zone status message should have at least 8 byte repeat data"
                     )
-                return self.decode_zone_status(bytes[8 + normal_data_length:], repeat_data_count, repeat_data_length)
+                return self.decode_zone_status(
+                    bytes[8 + normal_data_length :],
+                    repeat_data_count,
+                    repeat_data_length,
+                )
             case ControlStatusSubType.AC_CONTROL.value:
                 if normal_data_length != 0:
                     raise ValueError("AC control message should not have normal data")
@@ -147,15 +153,19 @@ class PacketDecoder:
                     raise ValueError(
                         "AC control message should have 4 byte repeat data"
                     )
-                return self.decode_ac_control(bytes[8 + normal_data_length:], repeat_data_count)
+                return self.decode_ac_control(
+                    bytes[8 + normal_data_length :], repeat_data_count
+                )
             case ControlStatusSubType.AC_STATUS.value:
-                #This packet doesn't currently have normal data (1.2.0), but the docs say it might in the future
+                # This packet doesn't currently have normal data (1.2.0), but the docs say it might in the future
                 if repeat_data_count != 0 and repeat_data_length < 10:
                     raise ValueError(
                         f"AC status message should have at least 10 or 14 byte repeat data, but it was {repeat_data_length}"
                     )
                 return self.decode_ac_status(
-                    bytes[8 + normal_data_length:], repeat_data_count, repeat_data_length
+                    bytes[8 + normal_data_length :],
+                    repeat_data_count,
+                    repeat_data_length,
                 )
             case _:
                 raise ValueError(f"Unknown sub message type: {hex(sub_message_type)}")
@@ -207,7 +217,11 @@ class PacketDecoder:
 
         for i in range(0, repeat_data_count):
             bits.clear()
-            bits.frombytes(bytes[i * repeat_data_length : i * repeat_data_length + repeat_data_length])
+            bits.frombytes(
+                bytes[
+                    i * repeat_data_length : i * repeat_data_length + repeat_data_length
+                ]
+            )
             # Byte 1 Bit 8-7 Zone power state
             zone_power_state = ZonePowerState(ba2int(bits[0:2]))
             # Byte 1 Bit 6-1 Zone number
