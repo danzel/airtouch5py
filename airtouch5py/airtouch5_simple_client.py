@@ -4,13 +4,13 @@ from typing import Callable, TypeVar
 
 from airtouch5py.airtouch5_client import Airtouch5Client, Airtouch5ConnectionStateChange
 from airtouch5py.data_packet_factory import DataPacketFactory
+from airtouch5py.discovery import AirtouchDevice
 from airtouch5py.packets.ac_ability import AcAbility, AcAbilityData
 from airtouch5py.packets.ac_status import AcStatus, AcStatusData
 from airtouch5py.packets.console_version import ConsoleVersionData
 from airtouch5py.packets.datapacket import Data, DataPacket
 from airtouch5py.packets.zone_name import ZoneName, ZoneNameData
 from airtouch5py.packets.zone_status import ZoneStatusData, ZoneStatusZone
-from airtouch5py.discovery import AirtouchDevice
 
 _LOGGER = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -26,6 +26,8 @@ class Airtouch5SimpleClient:
     The Airtouch5 will automatically send out updates to zone status and ac status as they happen.
     """
 
+    ip: str
+    device: AirtouchDevice | None
     data_packet_factory: DataPacketFactory
 
     # Populated after connect_and_stay_connected

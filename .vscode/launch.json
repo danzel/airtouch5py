@@ -6,7 +6,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/test.py",
-            "args": ["192.168.1.255"],  // 👈 Your arguments here
+            "args": ["192.168.1.255"],  // Set your broadcast address here
             "console": "integratedTerminal"
         }
     ]

@@ -1,10 +1,9 @@
-from dataclasses import dataclass
-from datetime import datetime
 import asyncio
 import logging
+import sys
+from dataclasses import dataclass
+from datetime import datetime
 from re import L
-import socket
-import time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -56,11 +55,12 @@ class AirtouchDiscovery:
 
     async def establish_server(self):
        # Create UDP socket
+        reuse_port_supported = sys.platform != "win32"
         transport, protocol = await self.loop.create_datagram_endpoint(
             lambda: AirtouchDiscoveryProtocol(self.parse_airtouch_response),
             local_addr=("0.0.0.0", self.DISCOVERY_PORT),
             allow_broadcast=True,
-            reuse_port=True,  # allow multiple listeners (important for HA)
+            reuse_port=reuse_port_supported,  # allow multiple listeners (important for HA)
         )
         self.transport = transport
 
@@ -91,9 +91,11 @@ class AirtouchDiscovery:
     async def discover_by_ip(self, ip: str) -> AirtouchDevice | None:
         await self._ensure_server()
 
-        message = self.DISCOVERY_MESSAGE.encode('utf-8')
+        message = self.DISCOVERY_MESSAGE.encode("utf-8")
         self.transport.sendto(message, (ip, self.DISCOVERY_PORT))
-        _LOGGER.info(f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}")
+        _LOGGER.info(
+            f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}"
+        )
         await asyncio.sleep(self.TIMEOUT)
         return self.responses[0] if self.responses else None
 
@@ -104,8 +106,9 @@ class AirtouchDiscovery:
 
         message = self.DISCOVERY_MESSAGE.encode("utf-8")
         self.transport.sendto(message, (ip, self.DISCOVERY_PORT))
-        _LOGGER.info(f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}")
-
+        _LOGGER.info(
+            f"Sent {len(self.DISCOVERY_MESSAGE)} bytes to {ip}:{self.DISCOVERY_PORT}"
+        )
 
         await asyncio.sleep(self.TIMEOUT)
         return list(self.responses)
