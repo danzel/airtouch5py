@@ -6,6 +6,7 @@ from pprint import pprint
 
 from airtouch5py.airtouch5_client import Airtouch5Client, Airtouch5ConnectionStateChange
 from airtouch5py.airtouch5_simple_client import Airtouch5SimpleClient
+from airtouch5py.discovery import AirtouchDiscovery
 from airtouch5py.packets.ac_ability import AcAbilityData
 from airtouch5py.packets.ac_error_information import AcErrorInformationData
 from airtouch5py.packets.ac_status import AcStatusData
@@ -14,7 +15,6 @@ from airtouch5py.packets.datapacket import DataPacket
 from airtouch5py.packets.zone_control import ZoneControlData
 from airtouch5py.packets.zone_name import ZoneNameData
 from airtouch5py.packets.zone_status import ZoneStatusData
-from airtouch5py.discovery import AirtouchDiscovery
 
 
 def print_packet(packet: DataPacket):
@@ -100,6 +100,7 @@ async def sendDiscoveryRequest(ip: str):
     responses = await AirtouchDiscovery_instance.discover(ip)
     print(responses)
     return responses
+
 
 if __name__ == "__main__":
     asyncio.run(main(sys.argv[1]))
