@@ -1,3 +1,4 @@
+import logging
 import struct
 
 from airtouch5py.packet_fields import (
@@ -53,6 +54,8 @@ from airtouch5py.packets.zone_status import (
 )
 from bitarray import bitarray
 from bitarray.util import ba2int
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class PacketDecoder:
@@ -186,12 +189,18 @@ class PacketDecoder:
             if zone_setting_value in self._set_ZoneSettingValue:
                 zone_setting_value = ZoneSettingValue(zone_setting_value)
             else:
+                _LOGGER.warning(
+                    f"Unknown zone setting value: {zone_setting_value}, defaulting to KEEP_SETTING_VALUE"
+                )
                 zone_setting_value = ZoneSettingValue.KEEP_SETTING_VALUE
             # Byte 2 bit 3-1 Power
             power = ba2int(bits[8 + 5 : 8 + 8])
             if power in self._set_ZoneSettingPower:
                 power = ZoneSettingPower(power)
             else:
+                _LOGGER.warning(
+                    f"Unknown zone setting power: {power}, defaulting to KEEP_POWER_STATE"
+                )
                 power = ZoneSettingPower.KEEP_POWER_STATE
             # Byte 3 Value to set
             value_to_set = ba2int(bits[16 : 16 + 8])
@@ -276,6 +285,9 @@ class PacketDecoder:
             if power_setting in self._set_SetPowerSetting:
                 power_setting = SetPowerSetting(power_setting)
             else:
+                _LOGGER.warning(
+                    f"Unknown power setting value: {power_setting}, defaulting to KEEP_POWER_SETTING"
+                )
                 power_setting = SetPowerSetting.KEEP_POWER_SETTING
             # Byte 1 Bit 4-1 AC number
             ac_number = ba2int(bits[4:8])
@@ -284,18 +296,27 @@ class PacketDecoder:
             if ac_mode in self._set_SetAcMode:
                 ac_mode = SetAcMode(ac_mode)
             else:
+                _LOGGER.warning(
+                    f"Unknown AC mode value: {ac_mode}, defaulting to KEEP_AC_MODE"
+                )
                 ac_mode = SetAcMode.KEEP_AC_MODE
             # Byte 2 Bit 4-1 AC fan speed
             ac_fan_speed = ba2int(bits[8 + 4 : 8 + 8])
             if ac_fan_speed in self._set_SetAcFanSpeed:
                 ac_fan_speed = SetAcFanSpeed(ac_fan_speed)
             else:
+                _LOGGER.warning(
+                    f"Unknown AC fan speed value: {ac_fan_speed}, defaulting to KEEP_AC_FAN_SPEED"
+                )
                 ac_fan_speed = SetAcFanSpeed.KEEP_AC_FAN_SPEED
             # Byte 3 Setpoint control
             setpoint_control = ba2int(bits[16 : 16 + 8])
             if setpoint_control in self._set_SetpointControl:
                 setpoint_control = SetpointControl(setpoint_control)
             else:
+                _LOGGER.warning(
+                    f"Unknown setpoint control value: {setpoint_control}, defaulting to INVALIDATE_DATA"
+                )
                 setpoint_control = SetpointControl.INVALIDATE_DATA
             # Byte 4 Setpoint value
             setpoint = (ba2int(bits[24 : 24 + 8]) + 100) / 10
@@ -333,6 +354,9 @@ class PacketDecoder:
             if ac_power_state in self._set_AcPowerState:
                 ac_power_state = AcPowerState(ac_power_state)
             else:
+                _LOGGER.warning(
+                    f"Unknown AC power state value: {ac_power_state}, defaulting to NOT_AVAILABLE"
+                )
                 ac_power_state = AcPowerState.NOT_AVAILABLE
             # Byte 1 Bit 4-1 AC number
             ac_number = ba2int(bits[4:8])
@@ -341,12 +365,18 @@ class PacketDecoder:
             if ac_mode in self._set_AcMode:
                 ac_mode = AcMode(ac_mode)
             else:
+                _LOGGER.warning(
+                    f"Unknown AC mode value: {ac_mode}, defaulting to NOT_AVAILABLE"
+                )
                 ac_mode = AcMode.NOT_AVAILABLE
             # Byte 2 Bit 4-1 AC fan speed
             ac_fan_speed = ba2int(bits[8 + 4 : 8 + 8])
             if ac_fan_speed in self._set_AcFanSpeed:
                 ac_fan_speed = AcFanSpeed(ac_fan_speed)
             else:
+                _LOGGER.warning(
+                    f"Unknown AC fan speed value: {ac_fan_speed}, defaulting to NOT_AVAILABLE"
+                )
                 ac_fan_speed = AcFanSpeed.NOT_AVAILABLE
             # Byte 3 Setpoint
             setpoint = (ba2int(bits[16 : 16 + 8]) + 100) / 10
