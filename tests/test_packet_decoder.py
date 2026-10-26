@@ -294,6 +294,23 @@ def test_decode_ac_status_response_console_120():
     assert ac.error_code == 0  # No error
 
 
+def test_decode_intelligent_auto_0():
+    """
+    This packet has an intelligent auto value that isn't in the docs
+    """
+
+    decoder = PacketDecoder()
+    data = b"\x55\x55\x55\xaa\xfd\x80\x7e\xc0\x00\x16\x23\x00\x00\x00\x00\x0e\x00\x01\x00\x38\x5a\xc1\x0a\xa8\x00\x00\x80\x00\xe2\xa8\x00\x00\xa0\xce"
+    packet: DataPacket = decoder.decode(data)
+
+    # Packet
+    assert packet.address == 0xFD80
+    assert packet.message_id == 0x7E
+    assert type(packet.data) is AcStatusData
+    assert len(packet.data.ac_status) == 1
+    assert packet.data.ac_status[0].ac_fan_speed == AcFanSpeed.INTELLIGENT_AUTO_0
+
+
 def test_decode_extended_ac_ability_request_example():
     """
     Decode the extended AC ability (request) message as given in the protocol documentation.

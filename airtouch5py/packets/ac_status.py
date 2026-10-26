@@ -40,6 +40,7 @@ class AcFanSpeed(Enum):
     HIGH = 0b0100
     POWERFUL = 0b0101
     TURBO = 0b0110
+    INTELLIGENT_AUTO_0 = 0b1000  # Not in the docs, but real device sends it
     INTELLIGENT_AUTO_1 = 0b1001
     INTELLIGENT_AUTO_2 = 0b1010
     INTELLIGENT_AUTO_3 = 0b1011
