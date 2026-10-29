@@ -11,6 +11,11 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
 ]
 
+[project.urls]
+Homepage = "https://github.com/danzel/airtouch5py"
+Repository = "https://github.com/danzel/airtouch5py.git"
+Issues = "https://github.com/danzel/airtouch5py/issues"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 bitarray = "^3.4.2"
